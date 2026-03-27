@@ -127,58 +127,30 @@ const POSPage: React.FC = () => {
               </span>
             </div>
             <SalesSummary />
-        
-        {/* Botones de prueba para Kretz LEX 850 */}
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h3 className="text-sm font-semibold text-yellow-800 mb-2">
-            🖨️ Prueba Kretz LEX 850 USE
-          </h3>
-          <div className="space-y-2">
-            <Button 
-              onClick={testPrintTicket}
-              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Probar Impresión de Ticket
-            </Button>
-            <Button 
-              onClick={checkPrinterStatus}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              📊 Verificar Estado de Impresora
-            </Button>
-          </div>
-          <p className="text-xs text-yellow-700 mt-2">
-            * Si falla, se creará un archivo .txt para imprimir manualmente
-          </p>
-        </div>
-          </div>
-
-          {/* Atajos rápidos */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Acciones rápidas
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <span className="text-2xl mb-2">🍕</span>
-                <span className="text-sm font-medium">Pizza</span>
-              </button>
-              
-              <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <span className="text-2xl mb-2">🍔</span>
-                <span className="text-sm font-medium">Hamburguesa</span>
-              </button>
-              
-              <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <span className="text-2xl mb-2">🥤</span>
-                <span className="text-sm font-medium">Bebidas</span>
-              </button>
-              
-              <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <span className="text-2xl mb-2">🍟</span>
-                <span className="text-sm font-medium">Acompañ.</span>
-              </button>
+            
+            {/* Botones de prueba para Kretz LEX 850 */}
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h3 className="text-sm font-semibold text-yellow-800 mb-2">
+                🖨️ Prueba Kretz LEX 850 USE
+              </h3>
+              <div className="space-y-2">
+                <Button 
+                  onClick={testPrintTicket}
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Probar Impresión de Ticket
+                </Button>
+                <Button 
+                  onClick={checkPrinterStatus}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  📊 Verificar Estado de Impresora
+                </Button>
+              </div>
+              <p className="text-xs text-yellow-700 mt-2">
+                * Si falla, se creará un archivo .txt para imprimir manualmente
+              </p>
             </div>
           </div>
         </div>

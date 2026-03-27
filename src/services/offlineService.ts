@@ -19,6 +19,17 @@ export class OfflineService {
     }
   }
 
+  // Limpiar todas las ventas pendientes (para resolver problemas de loop)
+  static async clearAllPendingSales(): Promise<void> {
+    try {
+      localStorage.removeItem(this.PENDING_SALES_KEY);
+      console.log('🧹 Todas las ventas pendientes han sido limpiadas');
+    } catch (error) {
+      console.error('Error clearing pending sales:', error);
+      throw new Error('Error al limpiar ventas pendientes');
+    }
+  }
+
   // Obtener ventas pendientes de sincronización
   static async getPendingSales(): Promise<Sale[]> {
     try {

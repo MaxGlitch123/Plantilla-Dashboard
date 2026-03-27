@@ -5,30 +5,48 @@ export class POSService {
   // Obtener productos para el POS
   static async getProducts(): Promise<Product[]> {
     try {
-      // Intentar obtener productos del servidor
-      const response = await apiClient.get('/products?active=true');
-      return response.data.map((product: any) => ({
-        id: product.id,
+      console.log('🔗 POS: Llamando a /articulosManufacturados/listarTodos...');
+      // Usar el mismo endpoint que funciona en products.ts
+      const response = await apiClient.get('/articulosManufacturados/listarTodos');
+      console.log(`📦 POS: Respuesta del servidor:`, response.data);
+      
+      // Los productos que devuelve listarTodos ya están filtrados y son válidos
+      const products = response.data || [];
+      
+      console.log(`✅ POS: ${products.length} productos recibidos del backend`);
+      
+      if (products.length === 0) {
+        console.log('⚠️ POS: No hay productos en el backend, usando productos de muestra');
+        return this.getSampleProducts();
+      }
+
+      const mappedProducts = products.map((product: any) => ({
+        id: product.id.toString(),
         name: product.denominacion,
-        price: product.precioVenta,
+        price: product.precioVenta || 0,
         category: product.categoria?.denominacion || 'Sin categoría',
-        subcategory: product.subcategoria?.denominacion,
-        description: product.descripcion,
-        image: product.imagenes?.[0]?.url,
-        unitMeasure: product.unidadMedida?.denominacion,
-        stock: product.stockCurrente,
-        isActive: product.habilitado,
-        barcode: product.codigoArticulo,
+        subcategory: product.categoria?.denominacion,
+        description: product.descripcion || `Producto ${product.denominacion}`,
+        image: product.imagenesArticulos?.[0]?.url,
+        unitMeasure: product.unidadMedida?.denominacion || 'unidad',
+        stock: 999, // Para POS usamos stock ilimitado
+        isActive: true,
+        barcode: `POS${product.id}`,
       }));
+
+      console.log(`🎯 POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
+      return mappedProducts;
+      
     } catch (error) {
-      console.error('Error fetching products from server, using sample products:', error);
+      console.error('❌ Error fetching products from server:', error);
+      console.log('🔄 Activando fallback a productos de muestra...');
       // Fallback a productos de muestra para pruebas
       return this.getSampleProducts();
     }
   }
 
   // Productos de muestra para pruebas del POS
-  private static getSampleProducts(): Product[] {
+  static getSampleProducts(): Product[] {
     return [
       {
         id: '1',
@@ -168,56 +186,77 @@ export class POSService {
   // Buscar productos por nombre o código
   static async searchProducts(query: string): Promise<Product[]> {
     try {
+      console.log(`🔍 Buscando productos con query: "${query}"`);
       const products = await this.getProducts();
-      const searchTerm = query.toLowerCase();
+      console.log(`📦 ${products.length} productos disponibles para búsqueda`);
       
-      return products.filter(product =>
+      if (!query || query.trim() === '') {
+        console.log('📋 Query vacío, devolviendo todos los productos');
+        return products;
+      }
+
+      const searchTerm = query.toLowerCase().trim();
+      const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(searchTerm) ||
         product.barcode?.toLowerCase().includes(searchTerm) ||
-        product.category.toLowerCase().includes(searchTerm)
+        product.category.toLowerCase().includes(searchTerm) ||
+        product.subcategory?.toLowerCase().includes(searchTerm) ||
+        product.description?.toLowerCase().includes(searchTerm)
       );
+      
+      console.log(`✅ ${filteredProducts.length} productos encontrados para "${query}"`);
+      return filteredProducts;
     } catch (error) {
-      console.error('Error searching products:', error);
-      return [];
+      console.error('❌ Error searching products:', error);
+      // Si falla la búsqueda, intentar usar productos de muestra
+      try {
+        const sampleProducts = this.getSampleProducts();
+        const searchTerm = query.toLowerCase().trim();
+        const filteredSamples = sampleProducts.filter(product =>
+          product.name.toLowerCase().includes(searchTerm) ||
+          product.barcode?.toLowerCase().includes(searchTerm) ||
+          product.category.toLowerCase().includes(searchTerm)
+        );
+        console.log(`🔄 Usando productos de muestra: ${filteredSamples.length} encontrados`);
+        return filteredSamples;
+      } catch (fallbackError) {
+        console.error('❌ Error con productos de muestra:', fallbackError);
+        return [];
+      }
     }
   }
 
   // Guardar venta en el servidor
   static async uploadSale(sale: Sale): Promise<void> {
     try {
+      // Estructura corregida para coincidir con SaleRequestDTO del backend
       const salePayload = {
-        fechaPedido: sale.saleDate,
-        horaEstimadaFinalizacion: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-        total: sale.total,
-        totalCosto: sale.subtotal,
-        estado: 'COMPLETADO',
-        tipoEnvio: 'TAKE_AWAY',
-        formaPago: sale.paymentMethod.toUpperCase(),
-        fechaVencimientoMP: null,
-        empleado: {
-          id: sale.employeeId
-        },
-        sucursal: {
-          id: 1 // TODO: Obtener de configuración
-        },
-        detallePedidos: sale.items.map(item => ({
-          cantidad: item.quantity,
-          subTotal: item.price * item.quantity,
-          articuloManufacturado: {
-            id: item.productId
-          }
+        items: sale.items.map(item => ({
+          productId: parseInt(item.productId), // Long en backend
+          productName: item.productName,
+          quantity: item.quantity, // Integer en backend
+          unitPrice: item.price // BigDecimal en backend
         })),
-        domicilio: null,
-        notasPedido: sale.notes || `Venta POS - ${sale.saleCode}`,
-        cliente: null
+        total: sale.total, // BigDecimal en backend
+        paymentMethod: sale.paymentMethod.toUpperCase(),
+        employeeId: parseInt(sale.employeeId.toString()) || 1, // Long en backend
+        notes: sale.notes || `Venta POS - ${sale.saleCode}`,
+        localId: sale.saleCode, // Para sincronización offline
+        timestamp: Date.parse(sale.saleDate) // Long en backend
       };
 
-      await apiClient.post('/pedidos', salePayload);
-      console.log(`✅ Venta ${sale.saleCode} enviada al servidor`);
+      // Usar el endpoint específico del POS con estructura correcta
+      await apiClient.post('/api/pos/sales', salePayload);
+      console.log(`✅ Venta ${sale.saleCode} enviada al servidor POS con estructura correcta`);
       
     } catch (error) {
-      console.error('Error uploading sale:', error);
-      throw new Error('Error al sincronizar la venta con el servidor');
+      console.error('Error uploading sale to POS server:', error);
+      // Log detallado del error para debugging
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error('Error al sincronizar la venta con el servidor POS');
     }
   }
 

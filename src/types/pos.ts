@@ -30,17 +30,19 @@ export interface Sale {
 }
 
 export interface Product {
-  id: string;
+  id: string | number; // Allowing both for compatibility
   name: string;
   price: number;
   category: string;
   subcategory?: string;
   description?: string;
   image?: string;
+  imageUrl?: string | null;
   unitMeasure?: string;
   stock?: number;
-  isActive: boolean;
-  barcode?: string;
+  isActive?: boolean;
+  active?: boolean;
+  barcode?: string | null;
 }
 
 export interface PaymentDetails {
@@ -78,3 +80,28 @@ export interface DailySales {
     revenue: number;
   }[];
 }
+
+// Tipos adicionales para sistema de recetas
+export type Ingredient = {
+  id: number;
+  name: string;
+  stockUnits: number;
+  active: boolean;
+  notes?: string | null;
+};
+
+export type RecipeUpsertItemDTO = {
+  ingredientId: number;
+  quantityUnits: number;
+};
+
+export type RecipeUpsertDTO = {
+  items: RecipeUpsertItemDTO[];
+};
+
+export type RecipeItem = {
+  id: number;
+  quantityUnits: number;
+  ingredient: Ingredient;
+  product?: unknown;
+};

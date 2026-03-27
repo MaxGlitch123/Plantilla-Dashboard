@@ -13,7 +13,8 @@ import {
   Tag,
   ShoppingCart,
   Receipt,
-  Globe
+  Globe,
+  ChefHat
 } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -46,6 +47,12 @@ const SIDEBAR_ITEMS = [
     label: 'Ventas POS',
     icon: <Receipt size={20} />,
     path: '/pos/sales',
+    allowedRoles: ['cajero', 'admin'],
+  },
+  {
+    label: 'Productos POS',
+    icon: <ChefHat size={20} />,
+    path: '/pos/products',
     allowedRoles: ['cajero', 'admin'],
   },
   {

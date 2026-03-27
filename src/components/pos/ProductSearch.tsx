@@ -20,11 +20,32 @@ export const ProductSearch: React.FC = () => {
     const loadProducts = async () => {
       setLoading(true);
       try {
+        console.log('🔍 Cargando productos para POS...');
         const allProductsData = await POSService.getProducts();
-        setAllProducts(allProductsData);
-        setProducts(allProductsData.slice(0, 20)); // Mostrar los primeros 20
+        console.log(`✅ ${allProductsData.length} productos cargados:`, allProductsData);
+        
+        if (allProductsData.length === 0) {
+          console.log('⚠️ No se cargaron productos, forzando productos de muestra...');
+          const sampleProducts = POSService.getSampleProducts();
+          console.log(`📋 ${sampleProducts.length} productos de muestra cargados:`, sampleProducts);
+          setAllProducts(sampleProducts);
+          setProducts(sampleProducts.slice(0, 20));
+        } else {
+          setAllProducts(allProductsData);
+          setProducts(allProductsData.slice(0, 20)); // Mostrar los primeros 20
+        }
       } catch (error) {
-        console.error('Error loading products:', error);
+        console.error('❌ Error loading products:', error);
+        // Si hay error, cargar productos de muestra directamente
+        try {
+          console.log('🔄 Error en carga, usando productos de muestra...');
+          const sampleProducts = POSService.getSampleProducts();
+          console.log(`📋 ${sampleProducts.length} productos de muestra como fallback:`, sampleProducts);
+          setAllProducts(sampleProducts);
+          setProducts(sampleProducts.slice(0, 20));
+        } catch (sampleError) {
+          console.error('❌ Error loading sample products:', sampleError);
+        }
       } finally {
         setLoading(false);
       }
@@ -38,27 +59,33 @@ export const ProductSearch: React.FC = () => {
     const searchProducts = async () => {
       if (query.trim() === '') {
         setProducts(allProducts.slice(0, 20));
+        setShowSuggestions(allProducts.length > 0);
         return;
       }
 
-      if (query.length < 2) {
+      // Permitir búsquedas desde 1 carácter para nombres comunes
+      if (query.length < 1) {
         setProducts([]);
+        setShowSuggestions(false);
         return;
       }
 
       setLoading(true);
       try {
+        console.log(`🔍 Iniciando búsqueda con: "${query}"`);
         const searchResults = await POSService.searchProducts(query);
+        console.log(`📦 Resultados encontrados: ${searchResults.length}`);
         setProducts(searchResults.slice(0, 20));
+        setShowSuggestions(true);
       } catch (error) {
-        console.error('Error searching products:', error);
+        console.error('❌ Error searching products:', error);
         setProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const debounce = setTimeout(searchProducts, 300);
+    const debounce = setTimeout(searchProducts, query.length <= 2 ? 500 : 300);
     return () => clearTimeout(debounce);
   }, [query, allProducts]);
 
@@ -88,6 +115,15 @@ export const ProductSearch: React.FC = () => {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
+  };
+
+  // Función de emergencia para cargar productos de muestra (solo para debugging)
+  const forceLoadSampleProducts = () => {
+    console.log('🚨 Carga forzada de productos de muestra activada');
+    const sampleProducts = POSService.getSampleProducts();
+    console.log(`📋 ${sampleProducts.length} productos de muestra forzados:`, sampleProducts);
+    setAllProducts(sampleProducts);
+    setProducts(sampleProducts.slice(0, 20));
   };
 
   const handleInputFocus = () => {
@@ -186,17 +222,52 @@ export const ProductSearch: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : query.length >= 2 ? (
+          ) : query.length >= 1 ? (
             <div className="p-4 text-center text-gray-500">
               <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              No se encontraron productos
+              <p className="text-sm">No se encontraron productos para "{query}"</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {allProducts.length > 0 
+                  ? `Buscando en ${allProducts.length} productos disponibles` 
+                  : 'Sin productos cargados. Verifique la conexión.'}
+              </p>
+            </div>
+          ) : allProducts.length === 0 && !loading ? (
+            <div className="p-4 text-center text-yellow-600">
+              <Package className="h-8 w-8 mx-auto mb-2 text-yellow-400" />
+              <p className="text-sm">No hay productos disponibles</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Verifique la conexión al servidor o contacte al administrador
+              </p>
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={forceLoadSampleProducts}
+                  className="mt-2 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                >
+                  🚨 Cargar productos de muestra (DEBUG)
+                </button>
+              )}
             </div>
           ) : (
             <div className="p-4 text-center text-gray-500">
               <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              Escriba al menos 2 caracteres para buscar
+              <p className="text-sm">Escriba para buscar productos</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {allProducts.length > 0 
+                  ? `${allProducts.length} productos disponibles`
+                  : 'Cargando productos...'}
+              </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Debug info (solo en desarrollo) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          🔧 Debug: {allProducts.length} productos cargados | 
+          {products.length} mostrados | 
+          {loading ? 'Cargando...' : 'Listo'}
         </div>
       )}
     </div>
