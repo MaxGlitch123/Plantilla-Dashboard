@@ -1,7 +1,7 @@
 // src/hooks/useUserRol.ts
 import { useAuth0 } from '@auth0/auth0-react';
 
-export const useUserRol = (): 'ADMIN' | 'CHEF' | 'DELIVERY' | undefined => {
+export const useUserRol = (): 'ADMIN' | 'CHEF' | 'DELIVERY' | 'CAJERO' | undefined => {
   const { user, isAuthenticated } = useAuth0();
   
   // Si no hay usuario autenticado o no hay objeto user, devolver undefined
@@ -34,6 +34,8 @@ export const useUserRol = (): 'ADMIN' | 'CHEF' | 'DELIVERY' | undefined => {
       return 'CHEF';
     case 'DELIVERY':
       return 'DELIVERY';
+    case 'CAJERO':
+      return 'CAJERO'; // ✅ Agregado soporte para CAJERO
     default:
       console.warn('Role not recognized:', role);
       return 'ADMIN'; // Fallback a ADMIN para cualquier otro rol

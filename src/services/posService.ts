@@ -186,12 +186,9 @@ export class POSService {
   // Buscar productos por nombre o código
   static async searchProducts(query: string): Promise<Product[]> {
     try {
-      console.log(`🔍 Buscando productos con query: "${query}"`);
       const products = await this.getProducts();
-      console.log(`📦 ${products.length} productos disponibles para búsqueda`);
       
       if (!query || query.trim() === '') {
-        console.log('📋 Query vacío, devolviendo todos los productos');
         return products;
       }
 
@@ -204,10 +201,9 @@ export class POSService {
         product.description?.toLowerCase().includes(searchTerm)
       );
       
-      console.log(`✅ ${filteredProducts.length} productos encontrados para "${query}"`);
       return filteredProducts;
     } catch (error) {
-      console.error('❌ Error searching products:', error);
+      console.error('Error searching products:', error);
       // Si falla la búsqueda, intentar usar productos de muestra
       try {
         const sampleProducts = this.getSampleProducts();
@@ -217,46 +213,273 @@ export class POSService {
           product.barcode?.toLowerCase().includes(searchTerm) ||
           product.category.toLowerCase().includes(searchTerm)
         );
-        console.log(`🔄 Usando productos de muestra: ${filteredSamples.length} encontrados`);
         return filteredSamples;
       } catch (fallbackError) {
-        console.error('❌ Error con productos de muestra:', fallbackError);
+        console.error('Error con productos de muestra:', fallbackError);
         return [];
       }
+    }
+  }
+
+  // Calcular ingredientes necesarios para una venta
+  static async calculateRequiredIngredients(sale: Sale): Promise<{ingredientId: number, required: number, available: number, name: string}[]> {
+    try {
+      console.log('🧮 Calculando ingredientes necesarios para la venta...');
+      const required: {[key: number]: {quantity: number, name: string}} = {};
+      
+      // Por cada item vendido
+      for (const item of sale.items) {
+        console.log(`📋 Analizando ${item.productName} (cantidad: ${item.quantity})`);
+        
+        // Obtener la receta del producto
+        const productId = parseInt(item.productId);
+        const recipe = await this.getProductRecipe(productId);
+        
+        // Por cada ingrediente en la receta  
+        for (const ingredient of recipe) {
+          const ingredientId = parseInt(ingredient.ingredientId?.toString() || '0');
+          const quantityNeeded = (ingredient.quantity || 0) * item.quantity;
+          
+          if (required[ingredientId]) {
+            required[ingredientId].quantity += quantityNeeded;
+          } else {
+            required[ingredientId] = {
+              quantity: quantityNeeded,
+              name: ingredient.ingredientName || `Ingrediente ${ingredientId}`
+            };
+          }
+        }
+      }
+      
+      // Obtener stock disponible actual
+      console.log('📦 Verificando stock disponible...');
+      const response = await apiClient.get("/articuloInsumo/listar");
+      const availableIngredients = response.data.filter((insumo: any) => 
+        !insumo.deleted && insumo.esParaElaborar
+      );
+      
+      // Crear lista final con disponibilidad
+      const result = Object.entries(required).map(([ingredientId, data]) => {
+        const available = availableIngredients.find((ing: any) => 
+          ing.id === parseInt(ingredientId)
+        );
+        
+        return {
+          ingredientId: parseInt(ingredientId),
+          required: data.quantity,
+          available: available?.stockActual || 0,
+          name: data.name
+        };
+      });
+      
+      console.log('🎯 Ingredientes calculados:', result);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Error calculating required ingredients:', error);
+      return [];
+    }
+  }
+
+  // Obtener receta de un producto individual  
+  static async getProductRecipe(productId: number) {
+    try {
+      const { data } = await apiClient.get(`/articulosManufacturados/obtener/${productId}`);
+      return (data.detalles || []).map((detalle: any) => ({
+        ingredientId: detalle.articuloInsumo?.id || 0,
+        ingredientName: detalle.articuloInsumo?.denominacion || 'Sin nombre',
+        quantity: detalle.cantidad || 0,  
+        unitMeasure: detalle.articuloInsumo?.unidadMedida?.denominacion || 'unidad'
+      }));
+    } catch (error) {
+      console.error(`❌ Error getting recipe for product ${productId}:`, error);
+      return [];
+    }
+  }
+
+  // Verificar si hay stock suficiente antes de vender
+  static async verifyStockAvailability(sale: Sale): Promise<{canSell: boolean, missingIngredients: string[]}> {
+    try {
+      const ingredients = await this.calculateRequiredIngredients(sale);
+      const missing: string[] = [];
+      
+      for (const ingredient of ingredients) {
+        if (ingredient.required > ingredient.available) {
+          missing.push(
+            `${ingredient.name}: necesita ${ingredient.required}g, disponible ${ingredient.available}g`
+          );
+        }
+      }
+      
+      return {
+        canSell: missing.length === 0,
+        missingIngredients: missing  
+      };
+      
+    } catch (error) {
+      console.error('❌ Error verifying stock:', error);
+      return {canSell: false, missingIngredients: ['Error verificando stock']};
+    }
+  }
+
+  // Descontar stock automáticamente después de venta exitosa
+  static async deductStockAfterSale(sale: Sale): Promise<void> {
+    try {
+      console.log('📉 Descontando stock después de venta exitosa...');
+      const ingredients = await this.calculateRequiredIngredients(sale);
+      
+      for (const ingredient of ingredients) {
+        try {
+          const newStock = ingredient.available - ingredient.required;
+          
+          console.log(`🔧 DESCONTANDO: ${ingredient.name}: ${ingredient.available}g → ${newStock}g (${-ingredient.required}g)`);
+          
+          // Usar el endpoint real del backend para actualizar stock
+          await apiClient.put(`/articuloInsumo/${ingredient.ingredientId}/stock`, {
+            stockActual: newStock
+          });
+          
+          console.log(`✅ Stock actualizado para ${ingredient.name}`);
+          
+        } catch (error) {
+          console.error(`❌ Error deducting stock for ingredient ${ingredient.name}:`, error);
+        }
+      }
+      
+      console.log('✅ Stock actualizado correctamente'); 
+    } catch (error) {
+      console.error('❌ Error deducting stock:', error);
+    }
+  }
+
+  // Mapear métodos de pago frontend → backend
+  static mapPaymentMethod(frontendMethod: string): string {
+    const methodMap: Record<string, string> = {
+      'cash': 'EFECTIVO',
+      'card': 'MERCADOPAGO', 
+      'transfer': 'MERCADOPAGO'
+    };
+    
+    const mapped = methodMap[frontendMethod.toLowerCase()];
+    if (!mapped) {
+      console.warn(`⚠️ Método de pago desconocido: ${frontendMethod}, usando EFECTIVO por defecto`);
+      return 'EFECTIVO';
+    }
+    
+    console.log(`💳 Mapeo método pago: ${frontendMethod} → ${mapped}`);
+    return mapped;
+  }
+
+  // Obtener el empleado del usuario autenticado actual
+  static async getValidEmployeeId(): Promise<number> {
+    try {
+      // Usar nuevo endpoint que devuelve solo MI empleado
+      const response = await apiClient.get('/Empleados/me');
+      
+      if (response.data && response.data.id) {
+        const empleadoId = response.data.id;
+        console.log(`✅ Empleado autenticado ID: ${empleadoId}`);
+        return parseInt(empleadoId);
+      }
+      
+      // Si no se puede obtener el empleado, usar ID por defecto
+      console.warn('No se pudo obtener información del empleado autenticado, usando ID por defecto: 1');
+      return 1;
+      
+    } catch (error: any) {
+      console.error('Error obteniendo empleado autenticado:', error);
+      
+      // Si hay un error 404, significa que el usuario no tiene empleado asignado
+      if (error.response?.status === 404) {
+        throw new Error('Usuario no tiene empleado asignado en el sistema');
+      }
+      
+      // Si hay un error 403, significa que el endpoint no existe aún
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        console.warn('Endpoint /Empleados/me no disponible, usando ID por defecto');
+        return 1;
+      }
+      
+      throw error;
     }
   }
 
   // Guardar venta en el servidor
   static async uploadSale(sale: Sale): Promise<void> {
     try {
-      // Estructura corregida para coincidir con SaleRequestDTO del backend
+      console.log('🔍 PASO 1: Verificando disponibilidad de stock...');
+      
+      // Verificar stock antes de procesar la venta
+      const stockCheck = await this.verifyStockAvailability(sale);
+      
+      if (!stockCheck.canSell) {
+        console.error('❌ Stock insuficiente:', stockCheck.missingIngredients);
+        throw new Error(`❌ STOCK INSUFICIENTE:\n${stockCheck.missingIngredients.join('\n')}`);
+      }
+      
+      console.log('✅ Stock verificado - Suficientes ingredientes disponibles');
+      console.log('💰 PASO 2: Procesando venta...');
+      
+      // ✅ MAPEO CORRECTO PARA SaleRequestDTO del backend
       const salePayload = {
         items: sale.items.map(item => ({
-          productId: parseInt(item.productId), // Long en backend
+          productId: parseInt(item.productId),
           productName: item.productName,
-          quantity: item.quantity, // Integer en backend
-          unitPrice: item.price // BigDecimal en backend
+          quantity: item.quantity,
+          unitPrice: parseFloat(item.price.toString()) // Asegurar formato numérico
         })),
-        total: sale.total, // BigDecimal en backend
-        paymentMethod: sale.paymentMethod.toUpperCase(),
-        employeeId: parseInt(sale.employeeId.toString()) || 1, // Long en backend
+        total: parseFloat(sale.total.toString()), // Asegurar formato numérico
+        paymentMethod: this.mapPaymentMethod(sale.paymentMethod),
+        employeeId: await this.getValidEmployeeId(), // Obtener empleado válido
         notes: sale.notes || `Venta POS - ${sale.saleCode}`,
-        localId: sale.saleCode, // Para sincronización offline
-        timestamp: Date.parse(sale.saleDate) // Long en backend
+        localId: sale.saleCode,
+        timestamp: Date.parse(sale.saleDate)
       };
 
-      // Usar el endpoint específico del POS con estructura correcta
-      await apiClient.post('/api/pos/sales', salePayload);
-      console.log(`✅ Venta ${sale.saleCode} enviada al servidor POS con estructura correcta`);
+      console.log(`🔗 Enviando venta al endpoint: /api/pos/sales`);
+      console.log(`📤 Payload:`, JSON.stringify(salePayload, null, 2));
       
-    } catch (error) {
-      console.error('Error uploading sale to POS server:', error);
+      // Usar el endpoint específico del POS con estructura correcta
+      const response = await apiClient.post('/api/pos/sales', salePayload);
+      console.log(`✅ PASO 3: Venta ${sale.saleCode} procesada exitosamente`);
+      console.log(`📥 Response:`, response.data);
+      
+      // El backend ya descuenta stock de ArticuloInsumo automáticamente
+      console.log(`🎉 VENTA COMPLETA: ${sale.saleCode} - Stock descontado por el backend`);
+      
+    } catch (error: any) {
+      console.error('❌ Error uploading sale to POS server:', error);
+      
       // Log detallado del error para debugging
       if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+        console.error('📊 Response Error Details:');
+        console.error('  Status:', error.response.status);
+        console.error('  Status Text:', error.response.statusText);
+        console.error('  Headers:', error.response.headers);
+        console.error('  Data:', error.response.data);
+        
+        // Errores específicos por código de estado
+        if (error.response.status === 400) {
+          console.error('🚫 BAD REQUEST - Posibles problemas:');
+          console.error('  - EmployeeId no existe en la base de datos');
+          console.error('  - PaymentMethod no válido');
+          console.error('  - ProductId no encontrado');
+          console.error('  - Formato de datos incorrecto');
+          
+          throw new Error(`❌ Error 400: Datos incorrectos. Verifica que el empleado y productos existan en el backend.`);
+        } else if (error.response.status === 500) {
+          console.error('💥 INTERNAL SERVER ERROR - Error en el servidor');
+          throw new Error(`❌ Error 500: Error interno del servidor. Verifica que el backend esté funcionando correctamente.`);
+        } else {
+          throw new Error(`❌ Error ${error.response.status}: ${error.response.statusText}`);
+        }
+      } else if (error.request) {
+        console.error('📡 Network Error:', error.request);
+        throw new Error('❌ Error de conexión: No se pudo conectar con el servidor backend');
+      } else {
+        console.error('⚙️ Setup Error:', error.message);
+        throw new Error(`❌ Error de configuración: ${error.message}`);
       }
-      throw new Error('Error al sincronizar la venta con el servidor POS');
     }
   }
 

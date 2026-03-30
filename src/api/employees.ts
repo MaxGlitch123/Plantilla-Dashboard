@@ -20,15 +20,31 @@ export const createEmployee = async (data: {
   const rolesToSend = [...data.roles];
   
   console.log('🔍 Enviando petición para crear usuario con roles:', rolesToSend);
-  
-  const response = await apiClient.post('/api/admin/users/createUser', {
+  console.log('📊 Datos completos del empleado:', {
     ...data,
     roles: rolesToSend,
-    email: data.userEmail, // 👈 Corrige el nombre del campo
-    connection: "Username-Password-Authentication", // 👈 Agrega este campo
+    email: data.userEmail,
+    connection: "Username-Password-Authentication"
   });
   
-  return response.data;
+  try {
+    const response = await apiClient.post('/api/admin/users/createUser', {
+      ...data,
+      roles: rolesToSend,
+      email: data.userEmail, // 👈 Corrige el nombre del campo
+      connection: "Username-Password-Authentication", // 👈 Agrega este campo
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error al crear empleado:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    throw error;
+  }
 };
 
 // Modifica un empleado existente

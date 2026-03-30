@@ -239,6 +239,7 @@ export const ProductSearch: React.FC = () => {
               <p className="text-xs text-gray-500 mt-1">
                 Verifique la conexión al servidor o contacte al administrador
               </p>
+              {/*
               {process.env.NODE_ENV === 'development' && (
                 <button
                   onClick={forceLoadSampleProducts}
@@ -247,6 +248,7 @@ export const ProductSearch: React.FC = () => {
                   🚨 Cargar productos de muestra (DEBUG)
                 </button>
               )}
+              */}
             </div>
           ) : (
             <div className="p-4 text-center text-gray-500">
@@ -262,14 +264,16 @@ export const ProductSearch: React.FC = () => {
         </div>
       )}
 
-      {/* Debug info (solo en desarrollo) */}
+      {/* Debug info (solo en desarrollo) 
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-2 text-xs text-gray-500 text-center">
           🔧 Debug: {allProducts.length} productos cargados | 
           {products.length} mostrados | 
           {loading ? 'Cargando...' : 'Listo'}
         </div>
+       
       )}
+      */}
     </div>
   );
 };

@@ -32,8 +32,26 @@ export const useOfflineSync = () => {
           await POSService.uploadSale(sale);
           await OfflineService.markSaleAsSynced(sale.id);
           console.log(`✅ Venta ${sale.saleCode} sincronizada`);
-        } catch (error) {
-          console.error(`❌ Error sincronizando venta ${sale.saleCode}:`, error);
+        } catch (error: any) {
+          const errorMsg = error?.message || '';
+          // Errores permanentes: no reintentar (stock insuficiente, datos incorrectos, sin empleado)
+          const isPermanentError = errorMsg.includes('STOCK INSUFICIENTE') || 
+                                   errorMsg.includes('Error 400') ||
+                                   errorMsg.includes('no tiene empleado') ||
+                                   errorMsg.includes('Error de configuración');
+          
+          if (isPermanentError) {
+            console.error(`🚫 Venta ${sale.saleCode} falló permanentemente, removiendo de pendientes:`, errorMsg);
+            await OfflineService.markSaleAsSynced(sale.id);
+            // Guardar en lista de ventas fallidas para revisión
+            try {
+              const failedSales = JSON.parse(localStorage.getItem('pos-failed-sales') || '[]');
+              failedSales.push({ ...sale, failReason: errorMsg, failDate: new Date().toISOString() });
+              localStorage.setItem('pos-failed-sales', JSON.stringify(failedSales));
+            } catch (e) { /* ignore storage errors */ }
+          } else {
+            console.error(`❌ Error sincronizando venta ${sale.saleCode} (se reintentará):`, error);
+          }
         }
       }
 

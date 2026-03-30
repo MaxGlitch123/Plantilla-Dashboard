@@ -112,6 +112,9 @@ export const PaymentModal: React.FC = () => {
         // No mostrar error, la venta ya se completó
       }
 
+      // Notificar a otros componentes (SalesSummary) que hubo una nueva venta
+      window.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: sale }));
+
       // Mostrar notificación de éxito
       const message = `✅ Venta ${sale.saleCode} completada`;
       if (!isOnline) {

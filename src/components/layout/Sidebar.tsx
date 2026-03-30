@@ -110,6 +110,7 @@ export const getRoleFromUser = (user: any): string => {
     case 'repartidor': return 'delivery';
     case 'chef': return 'chef';
     case 'cliente': return 'client';
+    case 'cajero': return 'cajero'; // ✅ Agregado para consistencia
     default: return rawRole.toLowerCase();
   }
 };

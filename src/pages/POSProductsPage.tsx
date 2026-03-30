@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Product } from "../types/pos";
-import { posSearchProducts } from "../api/posProducts";
+import { POSService } from "../services/posService";
 import { RecipeModal } from "../components/recipes/RecipeModal";
 import { Search, Package, DollarSign, ShoppingCart, BookOpen, Filter } from "lucide-react";
 import Button from "../components/ui/Button";
@@ -16,15 +16,15 @@ export default function POSProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const search = async () => {
-    if (query.trim().length < 1) return;
-    
     setLoading(true);
     setSearchPerformed(true);
     try {
-      const res = await posSearchProducts(query.trim());
+      console.log(`🔍 POSProductsPage: Buscando productos con query: "${query}"`);
+      const res = await POSService.searchProducts(query.trim());
+      console.log(`✅ POSProductsPage: ${res.length} productos encontrados`);
       setProducts(res);
     } catch (error) {
-      console.error('Error searching products:', error);
+      console.error('❌ POSProductsPage: Error searching products:', error);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -47,11 +47,13 @@ export default function POSProductsPage() {
     const loadInitialProducts = async () => {
       setLoading(true);
       try {
-        const res = await posSearchProducts(""); // Buscar todos
-        setProducts(res.slice(0, 8)); // Mostrar solo los primeros 8
+        console.log('🔍 POSProductsPage: Cargando productos iniciales...');
+        const res = await POSService.getProducts(); // Obtener todos los productos
+        console.log(`✅ POSProductsPage: ${res.length} productos cargados inicialmente`);
+        setProducts(res); // Mostrar todos los productos
         setSearchPerformed(true);
       } catch (error) {
-        console.error('Error loading initial products:', error);
+        console.error('❌ POSProductsPage: Error loading initial products:', error);
       } finally {
         setLoading(false);
       }

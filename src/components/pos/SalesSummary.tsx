@@ -33,12 +33,19 @@ export const SalesSummary: React.FC = () => {
         loadStats();
       }
     };
+
+    // Escuchar evento custom de venta completada (misma pestaña)
+    const handleSaleCompleted = () => {
+      loadStats();
+    };
     
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('pos-sale-completed', handleSaleCompleted);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('pos-sale-completed', handleSaleCompleted);
     };
   }, []);
 

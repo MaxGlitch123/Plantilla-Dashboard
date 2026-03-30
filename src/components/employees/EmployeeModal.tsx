@@ -39,7 +39,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
         lastName: employee.lastName ?? '',
         userEmail: employee.userEmail,
         nickName: employee.nickName,
-        roles: employee.roles.map(r => r.auth0RoleId),
+        roles: employee.roles.map(r => r.name), // Cambio: usar nombre del rol
         password: '', // No mostrar la contraseña existente
       });
     } else {
@@ -81,11 +81,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
     onSave(formData);
   };
 
-  // Modificado para permitir solo un rol a la vez
-  const handleRoleChange = (auth0RoleId: string) => {
+  // Modificado para permitir solo un rol a la vez y enviar el nombre del rol
+  const handleRoleChange = (roleId: string, roleName: string) => {
     setFormData(prev => ({
       ...prev,
-      roles: [auth0RoleId], // Asignar solo un rol a la vez
+      roles: [roleName], // Enviar el nombre del rol en lugar del ID
     }));
   };
 
@@ -131,12 +131,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
               {roles.length > 0 ? (
                 // Mostrar roles desde el backend usando radio buttons
                 roles.map(role => (
-                  <label key={role.auth0RoleId} className={`flex items-center gap-1 p-2 rounded border ${formData.roles.includes(role.auth0RoleId) ? 'bg-amber-100 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
+                  <label key={role.auth0RoleId} className={`flex items-center gap-1 p-2 rounded border ${formData.roles.includes(role.name) ? 'bg-amber-100 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
                     <input
                       type="radio"
                       name="employeeRole"
-                      checked={formData.roles.includes(role.auth0RoleId)}
-                      onChange={() => handleRoleChange(role.auth0RoleId)}
+                      checked={formData.roles.includes(role.name)}
+                      onChange={() => handleRoleChange(role.auth0RoleId, role.name)}
                     />
                     {role.name}
                   </label>

@@ -38,15 +38,21 @@ export function RecipeModal({ open, onClose, product }: Props) {
       setError(null);
       setLoading(true);
       try {
+        console.log(`🔍 RecipeModal: Cargando receta para producto ${productId}...`);
         const recipe = await posGetRecipe(productId);
-        setItems(
-          recipe.map((ri) => ({
-            ingredientId: ri.ingredient.id,
-            ingredientName: ri.ingredient.name,
-            quantityUnits: ri.quantityUnits,
-          }))
-        );
-      } catch {
+        console.log(`📦 RecipeModal: Receta obtenida:`, recipe);
+        
+        // Mapear la estructura de datos correcta
+        const mappedItems = recipe.map((item) => ({
+          ingredientId: parseInt(item.ingredientId?.toString() || '0'),
+          ingredientName: item.ingredientName,
+          quantityUnits: item.quantity || 0,
+        }));
+        
+        console.log(`✅ RecipeModal: ${mappedItems.length} ingredientes mapeados`, mappedItems);
+        setItems(mappedItems);
+      } catch (error) {
+        console.error('❌ RecipeModal: Error loading recipe:', error);
         setError("No se pudo cargar la receta.");
       } finally {
         setLoading(false);
@@ -58,7 +64,7 @@ export function RecipeModal({ open, onClose, product }: Props) {
     if (!open) return;
 
     const q = ingredientQuery.trim();
-    if (q.length < 2) {
+    if (q.length < 1) { // Cambiar de 2 a 1 para permitir búsquedas más cortas
       setIngredientResults([]);
       return;
     }
@@ -66,9 +72,12 @@ export function RecipeModal({ open, onClose, product }: Props) {
     const handle = setTimeout(async () => {
       setSearchingIngredients(true);
       try {
+        console.log(`🔍 RecipeModal: Buscando ingredientes con "${q}"`);
         const res = await posSearchIngredients(q);
+        console.log(`✅ RecipeModal: ${res.length} ingredientes encontrados`, res);
         setIngredientResults(res);
-      } catch {
+      } catch (error) {
+        console.error('❌ RecipeModal: Error searching ingredients:', error);
         setIngredientResults([]);
       } finally {
         setSearchingIngredients(false);
@@ -81,10 +90,26 @@ export function RecipeModal({ open, onClose, product }: Props) {
   if (!open) return null;
 
   const addIngredient = (ingredient: Ingredient) => {
+    const ingredientId = parseInt(ingredient.id.toString());
+    console.log(`➕ RecipeModal: Agregando ingrediente ${ingredient.name} (ID: ${ingredientId})`);
+    
     setItems((prev) => {
-      if (prev.some((x) => x.ingredientId === ingredient.id)) return prev;
-      return [...prev, { ingredientId: ingredient.id, ingredientName: ingredient.name, quantityUnits: 1 }];
+      if (prev.some((x) => x.ingredientId === ingredientId)) {
+        console.log('⚠️ RecipeModal: Ingrediente ya existe en la receta');
+        return prev;
+      }
+      const newItems = [...prev, { 
+        ingredientId, 
+        ingredientName: ingredient.name, 
+        quantityUnits: 1 
+      }];
+      console.log('✅ RecipeModal: Ingrediente agregado', newItems);
+      return newItems;
     });
+    
+    // Limpiar búsqueda después de agregar
+    setIngredientQuery("");
+    setIngredientResults([]);
   };
 
   const removeItem = (ingredientId: number) => {
