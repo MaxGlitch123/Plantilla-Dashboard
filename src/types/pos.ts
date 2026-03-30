@@ -9,6 +9,8 @@ export interface CartItem {
   image?: string;
 }
 
+export type SaleStatus = 'ACTIVE' | 'VOIDED';
+
 export interface Sale {
   id: string;
   saleCode: string;
@@ -27,6 +29,9 @@ export interface Sale {
   notes?: string;
   printed: boolean;
   synced: boolean;
+  status?: SaleStatus;
+  voidedAt?: string;
+  voidReason?: string;
 }
 
 export interface Product {

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Search, Filter, Printer, Eye, Download } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Calendar, Search, Printer, Eye, Download, XCircle } from 'lucide-react';
 import { POSService } from '../services/posService';
 import { PrinterService } from '../services/printerService';
 import { Sale } from '../types/pos';
 import Button from '../components/ui/Button';
+import VoidSaleModal from '../components/pos/VoidSaleModal';
 
 const POSSalesPage: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -12,24 +13,31 @@ const POSSalesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('today');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [voidingSale, setVoidingSale] = useState<Sale | null>(null);
 
   // Cargar ventas
-  useEffect(() => {
-    const loadSales = async () => {
-      setLoading(true);
-      try {
-        const salesData = await POSService.getTodaySales();
-        setSales(salesData);
-      } catch (error) {
-        console.error('Error loading sales:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSales();
+  const loadSales = useCallback(async () => {
+    setLoading(true);
+    try {
+      const salesData = await POSService.getTodaySales();
+      setSales(salesData);
+    } catch (error) {
+      console.error('Error loading sales:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadSales();
+
+    // Escuchar evento de nueva venta para actualizar en tiempo real
+    const handleNewSale = () => loadSales();
+    window.addEventListener('pos-sale-completed', handleNewSale);
+    return () => window.removeEventListener('pos-sale-completed', handleNewSale);
+  }, [loadSales]);
 
   // Aplicar filtros
   useEffect(() => {
@@ -49,6 +57,11 @@ const POSSalesPage: React.FC = () => {
     // Filtro por método de pago
     if (paymentMethodFilter !== 'all') {
       filtered = filtered.filter(sale => sale.paymentMethod === paymentMethodFilter);
+    }
+
+    // Filtro por estado
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(sale => sale.status === statusFilter);
     }
 
     // Filtro por fecha
@@ -74,7 +87,7 @@ const POSSalesPage: React.FC = () => {
     filtered.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
     
     setFilteredSales(filtered);
-  }, [sales, searchQuery, dateFilter, paymentMethodFilter]);
+  }, [sales, searchQuery, dateFilter, paymentMethodFilter, statusFilter]);
 
   const handlePrintSale = async (sale: Sale) => {
     try {
@@ -107,8 +120,19 @@ const POSSalesPage: React.FC = () => {
     return colors[method as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const totalSales = filteredSales.length;
-  const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+  const handleVoidSale = async (reason: string) => {
+    if (!voidingSale) return;
+    await POSService.voidSale(voidingSale.id, reason);
+    setVoidingSale(null);
+    // Recargar ventas
+    await loadSales();
+    // Notificar a SalesSummary
+    window.dispatchEvent(new CustomEvent('pos-sale-completed'));
+  };
+
+  const activeSales = filteredSales.filter(s => s.status !== 'VOIDED');
+  const totalSales = activeSales.length;
+  const totalRevenue = activeSales.reduce((sum, sale) => sum + sale.total, 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -144,7 +168,7 @@ const POSSalesPage: React.FC = () => {
 
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Búsqueda */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -178,6 +202,17 @@ const POSSalesPage: React.FC = () => {
             <option value="cash">Efectivo</option>
             <option value="card">Tarjeta</option>
             <option value="transfer">Transferencia</option>
+          </select>
+
+          {/* Filtro por estado */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="ACTIVE">Activas</option>
+            <option value="VOIDED">Anuladas</option>
           </select>
 
           {/* Acciones */}
@@ -224,6 +259,9 @@ const POSSalesPage: React.FC = () => {
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
@@ -278,13 +316,25 @@ const POSSalesPage: React.FC = () => {
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-lg font-bold text-green-600">
+                      <div className={`text-lg font-bold ${sale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
                         ${sale.total.toFixed(2)}
                       </div>
                       {!sale.synced && (
                         <div className="text-xs text-yellow-600">
                           Pendiente sync
                         </div>
+                      )}
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {sale.status === 'VOIDED' ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          Anulada
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Activa
+                        </span>
                       )}
                     </td>
                     
@@ -305,6 +355,16 @@ const POSSalesPage: React.FC = () => {
                         >
                           <Printer className="h-4 w-4" />
                         </button>
+
+                        {sale.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => setVoidingSale(sale)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Anular venta"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -337,11 +397,41 @@ const POSSalesPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Total:</label>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className={`text-lg font-bold ${selectedSale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
                     ${selectedSale.total.toFixed(2)}
                   </p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Estado:</label>
+                  <p className="mt-1">
+                    {selectedSale.status === 'VOIDED' ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                        Anulada
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        Activa
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Cajero:</label>
+                  <p className="text-sm">{selectedSale.employeeName}</p>
+                </div>
               </div>
+
+              {selectedSale.status === 'VOIDED' && selectedSale.voidReason && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-red-800">Motivo de anulación:</p>
+                  <p className="text-sm text-red-700">{selectedSale.voidReason}</p>
+                  {selectedSale.voidedAt && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Anulada el {new Date(selectedSale.voidedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
               
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Productos:</label>
@@ -364,6 +454,15 @@ const POSSalesPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de anulación */}
+      {voidingSale && (
+        <VoidSaleModal
+          saleCode={voidingSale.saleCode}
+          onConfirm={handleVoidSale}
+          onClose={() => setVoidingSale(null)}
+        />
       )}
     </div>
   );

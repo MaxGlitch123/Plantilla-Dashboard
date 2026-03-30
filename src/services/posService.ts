@@ -483,19 +483,74 @@ export class POSService {
     }
   }
 
-  // Obtener ventas del día actual
+  // Obtener ventas del día actual desde el backend
   static async getTodaySales(): Promise<Sale[]> {
-    const today = new Date().toISOString().split('T')[0];
-    const salesData = localStorage.getItem('pos-sales');
-    
-    if (salesData) {
-      const sales: Sale[] = JSON.parse(salesData);
-      return sales.filter(sale => 
-        sale.saleDate.startsWith(today)
-      );
+    try {
+      const response = await apiClient.get('/api/pos/sales/today');
+      const backendSales = response.data || [];
+      
+      return backendSales.map((s: any) => this.mapBackendSaleToFrontend(s));
+    } catch (error) {
+      console.warn('⚠️ Error obteniendo ventas del backend, usando localStorage:', error);
+      // Fallback a localStorage
+      const today = new Date().toISOString().split('T')[0];
+      const salesData = localStorage.getItem('pos-sales');
+      if (salesData) {
+        const sales: Sale[] = JSON.parse(salesData);
+        return sales.filter(sale => sale.saleDate.startsWith(today));
+      }
+      return [];
     }
-    
-    return [];
+  }
+
+  // Anular una venta
+  static async voidSale(saleId: string | number, reason: string): Promise<Sale> {
+    const employeeId = await this.getValidEmployeeId();
+    const response = await apiClient.post(`/api/pos/sales/${saleId}/void`, {
+      employeeId,
+      reason
+    });
+    return this.mapBackendSaleToFrontend(response.data);
+  }
+
+  // Mapear venta del backend al tipo frontend
+  private static mapBackendSaleToFrontend(s: any): Sale {
+    const paymentMap: Record<string, 'cash' | 'card' | 'transfer'> = {
+      'EFECTIVO': 'cash',
+      'MERCADOPAGO': 'card',
+      'CREDIT_CARD': 'card',
+      'DEBIT_CARD': 'card',
+      'QR': 'transfer',
+    };
+
+    return {
+      id: String(s.id),
+      saleCode: s.saleCode || '',
+      saleDate: s.saleDate || '',
+      employeeId: '',
+      employeeName: s.employeeName || '',
+      items: (s.items || []).map((item: any) => ({
+        id: String(item.productId),
+        productId: String(item.productId),
+        productName: item.productName,
+        price: item.unitPrice,
+        quantity: item.quantity,
+        category: '',
+        unitMeasure: 'unidad',
+      })),
+      itemsCount: s.itemsCount || 0,
+      subtotal: s.total || 0,
+      tax: 0,
+      discount: 0,
+      total: s.total || 0,
+      paymentMethod: paymentMap[s.paymentMethod] || 'cash',
+      notes: '',
+      printed: false,
+      synced: s.synced ?? true,
+      status: s.status || 'ACTIVE',
+      voidedAt: s.voidedAt,
+      voidReason: s.voidReason,
+    };
   }
 
   // Guardar venta localmente
@@ -518,19 +573,20 @@ export class POSService {
   static async getDailyStats(): Promise<DailySales> {
     try {
       const todaySales = await this.getTodaySales();
+      const activeSales = todaySales.filter(s => s.status !== 'VOIDED');
       
-      const totalRevenue = todaySales.reduce((sum, sale) => sum + sale.total, 0);
+      const totalRevenue = activeSales.reduce((sum, sale) => sum + sale.total, 0);
       
       const salesByMethod = {
-        cash: todaySales.filter(s => s.paymentMethod === 'cash').length,
-        card: todaySales.filter(s => s.paymentMethod === 'card').length,
-        transfer: todaySales.filter(s => s.paymentMethod === 'transfer').length,
+        cash: activeSales.filter(s => s.paymentMethod === 'cash').length,
+        card: activeSales.filter(s => s.paymentMethod === 'card').length,
+        transfer: activeSales.filter(s => s.paymentMethod === 'transfer').length,
       };
 
       // Calcular productos más vendidos
       const productSales = new Map<string, { quantity: number; revenue: number }>();
       
-      todaySales.forEach(sale => {
+      activeSales.forEach(sale => {
         sale.items.forEach(item => {
           const existing = productSales.get(item.productName) || { quantity: 0, revenue: 0 };
           productSales.set(item.productName, {
@@ -550,7 +606,7 @@ export class POSService {
         .slice(0, 5);
 
       return {
-        totalSales: todaySales.length,
+        totalSales: activeSales.length,
         totalRevenue,
         salesByMethod,
         topProducts
