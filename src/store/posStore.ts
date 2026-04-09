@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, Product, POSState, Sale, PaymentDetails } from '../types/pos';
+import { CartItem, Product, POSState, Sale, PaymentDetails, SaleChannel } from '../types/pos';
+import { POSService } from '../services/posService';
 
 interface POSStore extends POSState {
   // Actions para el carrito
@@ -16,7 +17,7 @@ interface POSStore extends POSState {
   setShowPaymentModal: (show: boolean) => void;
   
   // Actions para ventas
-  completeSale: (paymentDetails: PaymentDetails, customerInfo?: { name?: string; document?: string }) => Promise<Sale>;
+  completeSale: (paymentDetails: PaymentDetails, customerInfo?: { name?: string; document?: string }, channel?: SaleChannel) => Promise<Sale>;
   
   // Actions para estado
   setOfflineMode: (offline: boolean) => void;
@@ -112,7 +113,7 @@ export const usePOSStore = create<POSStore>()(
       },
 
       // Actions para ventas
-      completeSale: async (paymentDetails: PaymentDetails, customerInfo) => {
+      completeSale: async (paymentDetails: PaymentDetails, customerInfo, channel = 'local' as SaleChannel) => {
         const state = get();
         const { cart } = state;
 
@@ -121,15 +122,19 @@ export const usePOSStore = create<POSStore>()(
         }
 
         const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.21; // 21% IVA
+        const taxRate = channel === 'pedidosya' ? 0.27 : 0;
+        const tax = subtotal * taxRate;
         const total = subtotal + tax;
+
+        // Obtener info real del empleado autenticado
+        const employeeInfo = await POSService.getEmployeeInfo();
 
         const sale: Sale = {
           id: crypto.randomUUID(),
           saleCode: generateSaleCode(),
           saleDate: new Date().toISOString(),
-          employeeId: 'current-user-id', // TODO: Obtener del auth store
-          employeeName: 'Usuario Actual', // TODO: Obtener del auth store
+          employeeId: String(employeeInfo.id),
+          employeeName: employeeInfo.name,
           items: [...cart],
           itemsCount: cart.reduce((sum, item) => sum + item.quantity, 0),
           subtotal,
@@ -137,10 +142,12 @@ export const usePOSStore = create<POSStore>()(
           discount: 0,
           total,
           paymentMethod: paymentDetails.method,
+          channel,
           customerName: customerInfo?.name,
           customerDocument: customerInfo?.document,
           printed: false,
           synced: !state.isOffline,
+          status: 'ACTIVE',
         };
 
         // Limpiar carrito y cerrar modal

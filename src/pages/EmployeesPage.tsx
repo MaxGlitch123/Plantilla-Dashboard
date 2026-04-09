@@ -10,7 +10,7 @@ import { fetchEmployees } from '../api/employees';
 import { Link } from 'react-router-dom';
 import EmployeeModal from '../components/employees/EmployeeModal';
 import { fetchRoles } from '../api/roles';
-import { createEmployee, updateEmployee } from '../api/employees'; // Debes tener estas funciones en tu api
+import { createEmployee, updateEmployee, deleteEmployee } from '../api/employees'; // Debes tener estas funciones en tu api
 import { Role } from '../types/employee';
 
 
@@ -84,9 +84,25 @@ const EmployeesPage: React.FC = () => {
       }
       setIsModalOpen(false);
       setSelectedEmployee(undefined);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar empleado:', error);
-      alert('No se pudo guardar el empleado.');
+      const backendMsg = error.response?.data;
+      if (typeof backendMsg === 'string' && (backendMsg.includes('already exists') || backendMsg.includes('ya existe'))) {
+        alert('El email ya está registrado en el sistema. Usá otro email.');
+      } else {
+        alert(typeof backendMsg === 'string' ? backendMsg : 'No se pudo guardar el empleado.');
+      }
+    }
+  };
+
+  const handleDelete = async (employee: Employee) => {
+    if (!confirm(`¿Estás seguro de eliminar a ${employee.name} ${employee.lastName ?? ''}?`)) return;
+    try {
+      await deleteEmployee(employee.auth0Id);
+      setEmployees(prev => prev.filter(e => e.id !== employee.id));
+    } catch (error: any) {
+      console.error('Error al eliminar empleado:', error);
+      alert(error.response?.data || 'No se pudo eliminar el empleado.');
     }
   };
 
@@ -182,7 +198,7 @@ const EmployeesPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
                         <Button variant="ghost" size="sm" icon={<Edit size={16} />} onClick={() => openEditModal(emp)} />
-                        <Button variant="ghost" size="sm" icon={<Trash2 size={16} />} />
+                        <Button variant="ghost" size="sm" icon={<Trash2 size={16} />} onClick={() => handleDelete(emp)} />
                       </div>
                     </td>
                   </tr>

@@ -18,7 +18,7 @@ const MOCK_USERS: User[] = [
   {
     id: '1',
     username: 'admin',
-    email: 'admin@elbuensabor.com',
+    email: 'admin@cityfast.com',
     role: 'admin',
     firstName: 'Admin',
     lastName: 'User',
@@ -28,7 +28,7 @@ const MOCK_USERS: User[] = [
   {
     id: '2',
     username: 'manager',
-    email: 'manager@elbuensabor.com',
+    email: 'manager@cityfast.com',
     role: 'manager',
     firstName: 'Manager',
     lastName: 'User',
@@ -38,7 +38,7 @@ const MOCK_USERS: User[] = [
   {
     id: '3',
     username: 'employee',
-    email: 'employee@elbuensabor.com',
+    email: 'employee@cityfast.com',
     role: 'employee',
     firstName: 'Employee',
     lastName: 'User',
@@ -48,7 +48,7 @@ const MOCK_USERS: User[] = [
   {
     id: '4',
     username: 'delivery',
-    email: 'delivery@elbuensabor.com',
+    email: 'delivery@cityfast.com',
     role: 'delivery',
     firstName: 'Delivery',
     lastName: 'Person',

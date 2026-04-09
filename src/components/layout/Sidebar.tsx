@@ -14,7 +14,8 @@ import {
   ShoppingCart,
   Receipt,
   Globe,
-  ChefHat
+  ChefHat,
+  Wallet
 } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -53,6 +54,12 @@ const SIDEBAR_ITEMS = [
     label: 'Productos POS',
     icon: <ChefHat size={20} />,
     path: '/pos/products',
+    allowedRoles: ['cajero', 'admin'],
+  },
+  {
+    label: 'Cierre de Caja',
+    icon: <Wallet size={20} />,
+    path: '/cash-register',
     allowedRoles: ['cajero', 'admin'],
   },
   {
@@ -141,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
         <div className="p-4 flex justify-between items-center border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <Coffee className="w-6 h-6 text-green-600" />
-            <span className="font-serif text-xl font-bold">El Buen Sabor</span>
+            <span className="font-serif text-xl font-bold">City Fast</span>
           </div>
           <button onClick={onClose} className="p-1">
             <X size={24} className="text-gray-500" />
@@ -150,7 +157,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
       ) : (
         <div className="p-4 flex items-center space-x-2 border-b border-gray-200">
           <Coffee className="w-6 h-6 text-green-600" />
-          <span className="font-serif text-xl font-bold">El Buen Sabor</span>
+          <span className="font-serif text-xl font-bold">City Fast</span>
         </div>
       )}
 

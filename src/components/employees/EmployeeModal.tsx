@@ -39,7 +39,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
         lastName: employee.lastName ?? '',
         userEmail: employee.userEmail,
         nickName: employee.nickName,
-        roles: employee.roles.map(r => r.name), // Cambio: usar nombre del rol
+        roles: employee.roles.map(r => r.auth0RoleId), // Usar auth0RoleId
         password: '', // No mostrar la contraseña existente
       });
     } else {
@@ -64,8 +64,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validación de contraseña
-    if (!validatePassword(formData.password)) {
+    // Validación de contraseña (solo requerida al crear, no al editar)
+    if (!employee && !validatePassword(formData.password)) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.');
+      return;
+    }
+    if (employee && formData.password && !validatePassword(formData.password)) {
       setPasswordError('La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.');
       return;
     }
@@ -81,11 +85,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
     onSave(formData);
   };
 
-  // Modificado para permitir solo un rol a la vez y enviar el nombre del rol
-  const handleRoleChange = (roleId: string, roleName: string) => {
+  // Modificado para permitir solo un rol a la vez - enviar auth0RoleId
+  const handleRoleChange = (auth0RoleId: string) => {
     setFormData(prev => ({
       ...prev,
-      roles: [roleName], // Enviar el nombre del rol en lugar del ID
+      roles: [auth0RoleId], // Enviar el auth0RoleId que el backend necesita
     }));
   };
 
@@ -131,12 +135,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
               {roles.length > 0 ? (
                 // Mostrar roles desde el backend usando radio buttons
                 roles.map(role => (
-                  <label key={role.auth0RoleId} className={`flex items-center gap-1 p-2 rounded border ${formData.roles.includes(role.name) ? 'bg-amber-100 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
+                  <label key={role.auth0RoleId} className={`flex items-center gap-1 p-2 rounded border ${formData.roles.includes(role.auth0RoleId) ? 'bg-amber-100 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
                     <input
                       type="radio"
                       name="employeeRole"
-                      checked={formData.roles.includes(role.name)}
-                      onChange={() => handleRoleChange(role.auth0RoleId, role.name)}
+                      checked={formData.roles.includes(role.auth0RoleId)}
+                      onChange={() => handleRoleChange(role.auth0RoleId)}
                     />
                     {role.name}
                   </label>
@@ -149,11 +153,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
             </div>
           </div>
           <Input
-            label="Contraseña"
+            label={employee ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}
             type="password"
             value={formData.password}
             onChange={e => setFormData({ ...formData, password: e.target.value })}
-            required
+            required={!employee}
           />
           {passwordError && (
             <div className="text-red-500 text-sm">{passwordError}</div>

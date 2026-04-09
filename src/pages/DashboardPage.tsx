@@ -13,6 +13,7 @@ import {
 import { useSupplyStore } from '../store/useSupplyStore';
 import { connectToPedidoSocket, WebSocketConnectionState } from '../utils/pedidoWebSocket';
 import { POSService } from '../services/posService'; // Nuevo import para POS
+import { useUserRol } from '../hooks/useUserRol';
 import { AlertTriangle, TrendingUp, Package, RefreshCw, Wifi, WifiOff, Eye, ShoppingCart, DollarSign } from 'lucide-react';
 
 import { Bar } from 'react-chartjs-2';
@@ -31,6 +32,8 @@ const DashboardPage = () => {
   console.log('🚀 DashboardPage montado, iniciando carga de datos...');
   
   const navigate = useNavigate();
+  const userRole = useUserRol();
+  const isAdmin = userRole === 'ADMIN';
   const [ventas, setVentas] = useState<number>(0);
   const [pedidos, setPedidos] = useState<number>(0);
   const [productosVendidos, setProductosVendidos] = useState<number>(0);
@@ -67,25 +70,28 @@ const DashboardPage = () => {
       try {
         console.log('📊 Cargando datos del dashboard...');
         
-        console.log('💰 Obteniendo total de ventas...');
-        const totalVentas = await fetchTotalVentas();
-        console.log('✅ Total ventas:', totalVentas);
-        setVentas(Number(totalVentas)); // 👈 conversión segura
+        // Solo cargar datos generales si es admin
+        if (isAdmin) {
+          console.log('💰 Obteniendo total de ventas...');
+          const totalVentas = await fetchTotalVentas();
+          console.log('✅ Total ventas:', totalVentas);
+          setVentas(Number(totalVentas));
 
-        console.log('📋 Obteniendo total de pedidos...');
-        const totalPedidos = await fetchTotalPedidos();
-        console.log('✅ Total pedidos:', totalPedidos);
-        setPedidos(Number(totalPedidos));
+          console.log('📋 Obteniendo total de pedidos...');
+          const totalPedidos = await fetchTotalPedidos();
+          console.log('✅ Total pedidos:', totalPedidos);
+          setPedidos(Number(totalPedidos));
 
-        console.log('🛍️ Obteniendo productos vendidos...');
-        const totalVendidos = await fetchTotalProductosVendidos();
-        console.log('✅ Productos vendidos:', totalVendidos);
-        setProductosVendidos(Number(totalVendidos));
+          console.log('🛍️ Obteniendo productos vendidos...');
+          const totalVendidos = await fetchTotalProductosVendidos();
+          console.log('✅ Productos vendidos:', totalVendidos);
+          setProductosVendidos(Number(totalVendidos));
 
-        console.log('🏆 Obteniendo productos más vendidos...');
-        const topVendidos = await fetchProductosMasVendidos();
-        console.log('✅ Productos más vendidos:', topVendidos);
-        setMasVendidos(topVendidos);
+          console.log('🏆 Obteniendo productos más vendidos...');
+          const topVendidos = await fetchProductosMasVendidos();
+          console.log('✅ Productos más vendidos:', topVendidos);
+          setMasVendidos(topVendidos);
+        }
         
         // Cargar estadísticas del POS
         console.log('🛒 Obteniendo estadísticas del POS...');
@@ -204,9 +210,13 @@ const DashboardPage = () => {
     <Layout>
       <div className="mb-6 flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-gray-800">Dashboard</h1>
+          <h1 className="text-2xl font-serif font-bold text-gray-800">
+            {isAdmin ? 'Dashboard' : 'Mi Turno'}
+          </h1>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-gray-600">Resumen en tiempo real del negocio</p>
+            <p className="text-gray-600">
+              {isAdmin ? 'Resumen en tiempo real del negocio' : 'Resumen de tu jornada de hoy'}
+            </p>
             {renderConnectionStatus()}
           </div>
         </div>
@@ -279,38 +289,44 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Ventas totales</p>
-              <p className="text-2xl font-bold text-amber-600">
-                ${Number(ventas).toFixed(2)}
-              </p>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isAdmin ? 'lg:grid-cols-3 xl:grid-cols-6' : 'lg:grid-cols-3'} gap-4 mb-6`}>
+        {isAdmin && (
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Ventas totales</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  ${Number(ventas).toFixed(2)}
+                </p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-amber-600" />
             </div>
-            <TrendingUp className="h-8 w-8 text-amber-600" />
-          </div>
-        </Card>
+          </Card>
+        )}
         
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Pedidos totales</p>
-              <p className="text-2xl font-bold text-amber-600">{pedidos}</p>
+        {isAdmin && (
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Pedidos totales</p>
+                <p className="text-2xl font-bold text-amber-600">{pedidos}</p>
+              </div>
+              <Package className="h-8 w-8 text-amber-600" />
             </div>
-            <Package className="h-8 w-8 text-amber-600" />
-          </div>
-        </Card>
+          </Card>
+        )}
         
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Productos vendidos</p>
-              <p className="text-2xl font-bold text-amber-600">{productosVendidos}</p>
+        {isAdmin && (
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Productos vendidos</p>
+                <p className="text-2xl font-bold text-amber-600">{productosVendidos}</p>
+              </div>
+              <Package className="h-8 w-8 text-amber-600" />
             </div>
-            <Package className="h-8 w-8 text-amber-600" />
-          </div>
-        </Card>
+          </Card>
+        )}
         
         <Card>
           <div className="flex items-center justify-between">
@@ -323,7 +339,6 @@ const DashboardPage = () => {
           </div>
         </Card>
 
-        {/* Nuevas tarjetas del POS */}
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -347,13 +362,15 @@ const DashboardPage = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">Productos más vendidos</h2>
-          <div className="h-72">
-            <Bar data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
-          </div>
-        </Card>
+      <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-2' : ''} gap-6`}>
+        {isAdmin && (
+          <Card>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Productos más vendidos</h2>
+            <div className="h-72">
+              <Bar data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+            </div>
+          </Card>
+        )}
 
         <Card>
           <h2 className="text-lg font-semibold mb-4 text-gray-800">Estado del Inventario</h2>

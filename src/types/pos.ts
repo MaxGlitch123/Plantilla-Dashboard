@@ -10,6 +10,7 @@ export interface CartItem {
 }
 
 export type SaleStatus = 'ACTIVE' | 'VOIDED';
+export type SaleChannel = 'local' | 'pedidosya';
 
 export interface Sale {
   id: string;
@@ -24,6 +25,7 @@ export interface Sale {
   discount: number;
   total: number;
   paymentMethod: 'cash' | 'card' | 'transfer';
+  channel: SaleChannel;
   customerName?: string;
   customerDocument?: string;
   notes?: string;

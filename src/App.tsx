@@ -13,10 +13,10 @@ const App: React.FC = () => {
     console.log('🔄 App.tsx useEffect - Auth cambió:', { isAuthenticated, isLoading });
     if (isAuthenticated && user) {
       console.log('✅ Usuario autenticado:', user.email);
-      document.title = `El Buen Sabor | Sistema de Gestión`;
+      document.title = `City Fast | Sistema de Gestión`;
     } else {
       console.log('❌ Usuario no autenticado');
-      document.title = `El Buen Sabor | Iniciar sesión`;
+      document.title = `City Fast | Iniciar sesión`;
     }
   }, [isAuthenticated, user, isLoading]);
 

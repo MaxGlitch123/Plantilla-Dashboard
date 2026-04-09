@@ -5,6 +5,7 @@ import { RecipeModal } from "../components/recipes/RecipeModal";
 import { Search, Package, DollarSign, ShoppingCart, BookOpen, Filter } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import Layout from '../components/layout/Layout';
 
 export default function POSProductsPage() {
   const [query, setQuery] = useState("");
@@ -63,7 +64,8 @@ export default function POSProductsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <Layout>
+      <div className="p-4 md:p-6">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -248,6 +250,7 @@ export default function POSProductsPage() {
         onClose={() => setRecipeOpen(false)} 
         product={selectedProduct} 
       />
-    </div>
+      </div>
+    </Layout>
   );
 }

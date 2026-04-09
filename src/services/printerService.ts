@@ -7,8 +7,8 @@ export class PrinterService {
   private static defaultSettings = {
     printerName: 'Kretz LEX 850',
     paperWidth: 80, // caracteres (impresora matricial)
-    fontSize: 10, // Tamaño óptimo para matricial
-    lineSpacing: 1.0, // Espaciado simple para matricial
+    fontSize: 16, // Tamaño grande legible para producción
+    lineSpacing: 1.2, // Espaciado cómodo
     margins: { top: 2, bottom: 3, left: 2, right: 2 },
     enableLogo: false, // Sin logo para matricial
     autocut: false, // Corte manual
@@ -327,17 +327,13 @@ export class PrinterService {
 <body>
   <div class="ticket-container ticket-animation">
     <div class="header">
-      <div class="business-name">🍴 Buen Sabor</div>
+      <div class="business-name">🍴 City Fast</div>
       <div class="business-info">🏠 Restaurant & Delivery Premium</div>
       <div class="business-info">📞 Tel: (123) 456-7890</div>
-      <div class="business-info">📧 delivery@buensabor.com</div>
+      <div class="business-info">📧 delivery@cityfast.com</div>
     </div>
 
     <div class="section">
-      <div class="sale-info">
-        <span>🎫 Ticket:</span>
-        <span><strong>${sale.saleCode}</strong></span>
-      </div>
       <div class="sale-info">
         <span>📅 Fecha:</span>
         <span>${date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -384,10 +380,12 @@ export class PrinterService {
         <span>📈 Subtotal:</span>
         <span>$${sale.subtotal.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
       </div>
+      ${sale.tax > 0 ? `
       <div class="total-row">
-        <span>📊 IVA (21%):</span>
+        <span>📊 IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):</span>
         <span>$${sale.tax.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
       </div>
+      ` : ''}
       ${sale.discount > 0 ? `
       <div class="total-row">
         <span>🎁 Descuento:</span>
@@ -413,7 +411,7 @@ export class PrinterService {
 
     <div class="footer">
       <div class="footer-message">🙏 ¡Gracias por su compra!</div>
-      <div class="footer-website">🌐 Visite www.buensabor.com</div>
+      <div class="footer-website">🌐 Visite www.cityfast.com</div>
       <div class="footer-message">💖 ¡Esperamos verle pronto!</div>
       <div class="footer-timestamp">
         🕒 Generado: ${date.toLocaleString('es-ES')}
@@ -448,13 +446,12 @@ export class PrinterService {
     let ticket = '';
     
     // Encabezado centrado
-    ticket += this.centerText('BUEN SABOR', 48) + '\n';
+    ticket += this.centerText('CITY FAST', 48) + '\n';
     ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
     ticket += this.centerText('Tel: (123) 456-7890', 48) + '\n';
     ticket += line + '\n\n';
     
     // Información de la venta
-    ticket += `Ticket: ${sale.saleCode.padEnd(20)} ${date.toLocaleDateString()}\n`;
     ticket += `Fecha: ${date.toLocaleDateString().padEnd(22)} ${date.toLocaleTimeString()}\n`;
     ticket += `Cajero: ${sale.employeeName}\n`;
     if (sale.customerName) {
@@ -479,7 +476,10 @@ export class PrinterService {
     
     // Totales
     ticket += `${'Subtotal:'.padEnd(33)} $${sale.subtotal.toFixed(2).padStart(8)}\n`;
-    ticket += `${'IVA (21%):'.padEnd(33)} $${sale.tax.toFixed(2).padStart(8)}\n`;
+    if (sale.tax > 0) {
+      const ivaLabel = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
+      ticket += `${ivaLabel.padEnd(33)} $${sale.tax.toFixed(2).padStart(8)}\n`;
+    }
     
     if (sale.discount > 0) {
       ticket += `${'Descuento:'.padEnd(33)} -$${sale.discount.toFixed(2).padStart(7)}\n`;
@@ -498,7 +498,7 @@ export class PrinterService {
     
     // Pie de página
     ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    ticket += this.centerText('www.buensabor.com', 48) + '\n\n';
+    ticket += this.centerText('www.cityfast.com', 48) + '\n\n';
     ticket += this.centerText(date.toLocaleString(), 48) + '\n';
     
     // Saltos de línea finales para corte de papel
@@ -513,9 +513,9 @@ export class PrinterService {
   <style>
     @media print {
       @page { size: auto; margin: 0; }
-      body { margin: 0; font-family: 'Courier New', monospace; font-size: 10px; }
+      body { margin: 0; font-family: 'Arial', sans-serif; font-size: 16px; line-height: 1.4; }
     }
-    body { font-family: 'Courier New', monospace; font-size: 10px; white-space: pre; }
+    body { font-family: 'Arial', sans-serif; font-size: 16px; white-space: pre; line-height: 1.4; }
   </style>
 </head>
 <body>${ticket}</body>
@@ -548,7 +548,7 @@ export class PrinterService {
         if (doc) {
           doc.open();
           doc.write(`<html><head><style>
-            body { font-family: 'Courier New', monospace; font-size: 10px; white-space: pre; margin: 0; }
+            body { font-family: 'Arial', sans-serif; font-size: 16px; white-space: pre; margin: 0; line-height: 1.4; }
             @media print { @page { size: auto; margin: 2mm; } }
           </style></head><body>${textContent}</body></html>`);
           doc.close();
@@ -577,13 +577,12 @@ export class PrinterService {
     let ticket = '';
     
     // Encabezado
-    ticket += this.centerText('BUEN SABOR', 48) + '\n';
+    ticket += this.centerText('CITY FAST', 48) + '\n';
     ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
     ticket += this.centerText('Tel: (123) 456-7890', 48) + '\n';
     ticket += line + '\n\n';
     
     // Info de venta
-    ticket += `Ticket: ${sale.saleCode}\n`;
     ticket += `Fecha: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n`;
     ticket += `Cajero: ${sale.employeeName}\n`;
     if (sale.customerName) {
@@ -608,7 +607,10 @@ export class PrinterService {
     
     // Totales
     ticket += `${'Subtotal:'.padEnd(35)} $${sale.subtotal.toFixed(2)}\n`;
-    ticket += `${'IVA (21%):'.padEnd(35)} $${sale.tax.toFixed(2)}\n`;
+    if (sale.tax > 0) {
+      const ivaLabel = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
+      ticket += `${ivaLabel.padEnd(35)} $${sale.tax.toFixed(2)}\n`;
+    }
     if (sale.discount > 0) {
       ticket += `${'Descuento:'.padEnd(35)} -$${sale.discount.toFixed(2)}\n`;
     }
@@ -619,7 +621,7 @@ export class PrinterService {
     
     // Pie
     ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    ticket += this.centerText('www.buensabor.com', 48) + '\n\n';
+    ticket += this.centerText('www.cityfast.com', 48) + '\n\n';
     
     // Saltos para corte manual
     ticket += '\n\n\n';

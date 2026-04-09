@@ -41,7 +41,8 @@ export const createEmployee = async (data: {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
+      rolesSent: rolesToSend
     });
     throw error;
   }
@@ -66,4 +67,11 @@ export const updateEmployee = async (
     auth0Id: data.auth0Id,
   });
   return response.data;
+};
+
+// Elimina un empleado (borrado lógico)
+export const deleteEmployee = async (auth0Id: string): Promise<void> => {
+  await apiClient.delete('/api/admin/users/deleteUserById', {
+    data: { auth0Id },
+  });
 };

@@ -26,6 +26,7 @@ import ClientAccessDeniedPage from '../pages/ClientAccessDeniedPage';
 import POSPage from '../pages/POSPage';
 import POSSalesPage from '../pages/POSSalesPage';
 import POSProductsPage from '../pages/POSProductsPage';
+import CashRegisterPage from '../pages/CashRegisterPage';
 
 // Component
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
@@ -36,6 +37,7 @@ import EmployeeRolesPage from '../pages/EmployeeRolesPage';
 
 // Store
 import { useAuthStore } from '../store/useAuthStore';
+import { setAuth0UserName } from '../services/posService';
 
 // Roles
 const ALL_ROLES = ['admin', 'chef', 'delivery', 'cajero'];
@@ -122,6 +124,13 @@ const AppRoutes: React.FC = () => {
     console.log('⚙️ AppRoutes: Configuring token getter');
     setTokenGetter(tokenGetterWrapper);
   }, [tokenGetterWrapper]);
+
+  // Sincronizar nombre de Auth0 (ID token) para el POS
+  useEffect(() => {
+    if (isAuthenticated && user?.name) {
+      setAuth0UserName(user.name);
+    }
+  }, [isAuthenticated, user?.name]);
 
   // ⚠️ Asumimos que los roles están en una claim personalizada, como:
   const audienceKey = import.meta.env.VITE_AUTH0_AUDIENCE?.endsWith('/') 
@@ -294,6 +303,18 @@ const AppRoutes: React.FC = () => {
               enableAdvancedGuard={true}
             >
               <POSProductsPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/cash-register" 
+          element={
+            <ProtectedRoute 
+              allowedRoles={POS_ROLES}
+              enableAdvancedGuard={true}
+            >
+              <CashRegisterPage />
             </ProtectedRoute>
           } 
         />

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Banknote, Smartphone, Printer, AlertCircle } from 'lucide-react';
+import { X, CreditCard, Banknote, Smartphone, Printer, AlertCircle, Store, Truck } from 'lucide-react';
 import { usePOSStore } from '../../store/posStore';
 import { POSService } from '../../services/posService';
 import { OfflineService } from '../../services/offlineService';
 import { PrinterService } from '../../services/printerService';
-import { PaymentDetails } from '../../types/pos';
+import { PaymentDetails, SaleChannel } from '../../types/pos';
 import Button from '../ui/Button';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 export const PaymentModal: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
+  const [channel, setChannel] = useState<SaleChannel>('local');
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerDocument, setCustomerDocument] = useState('');
@@ -26,7 +27,8 @@ export const PaymentModal: React.FC = () => {
   } = usePOSStore();
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.21;
+  const taxRate = channel === 'pedidosya' ? 0.27 : 0;
+  const tax = subtotal * taxRate;
   const total = subtotal + tax;
   const receivedAmountNum = parseFloat(receivedAmount) || 0;
   const change = paymentMethod === 'cash' ? Math.max(0, receivedAmountNum - total) : 0;
@@ -82,18 +84,18 @@ export const PaymentModal: React.FC = () => {
       const sale = await completeSale(paymentDetails, {
         name: customerName || undefined,
         document: customerDocument || undefined
-      });
+      }, channel);
 
       // Guardar venta localmente
       await POSService.saveSaleLocally(sale);
 
-      // Si está online, intentar enviar al servidor
+      // Intentar sincronizar con el servidor (el backend descuenta stock automáticamente)
       if (isOnline) {
         try {
           await POSService.uploadSale(sale);
           console.log('✅ Venta sincronizada inmediatamente');
         } catch (error) {
-          console.log('⚠️ Error sincronizando, se guardará para más tarde');
+          console.error('❌ Error sincronizando venta al backend:', error);
           await OfflineService.savePendingSale(sale);
         }
       } else {
@@ -175,6 +177,40 @@ export const PaymentModal: React.FC = () => {
               </span>
             </div>
           )}
+
+          {/* Canal de venta */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Canal de venta
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setChannel('local')}
+                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
+                  channel === 'local'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Store className="h-6 w-6 mb-1" />
+                <span className="text-sm font-medium">Local</span>
+                <span className="text-xs text-gray-500">Sin IVA</span>
+              </button>
+              
+              <button
+                onClick={() => setChannel('pedidosya')}
+                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-colors ${
+                  channel === 'pedidosya'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Truck className="h-6 w-6 mb-1" />
+                <span className="text-sm font-medium">Pedidos Ya</span>
+                <span className="text-xs text-gray-500">IVA 27%</span>
+              </button>
+            </div>
+          </div>
 
           {/* Métodos de pago */}
           <div>
@@ -277,10 +313,12 @@ export const PaymentModal: React.FC = () => {
               <span>Subtotal:</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>IVA (21%):</span>
-              <span>${tax.toFixed(2)}</span>
-            </div>
+            {channel === 'pedidosya' && (
+              <div className="flex justify-between text-sm text-red-600">
+                <span>IVA (27%):</span>
+                <span>${tax.toFixed(2)}</span>
+              </div>
+            )}
             <div className="border-t pt-2">
               <div className="flex justify-between font-bold">
                 <span>Total:</span>

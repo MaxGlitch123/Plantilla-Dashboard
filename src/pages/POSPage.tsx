@@ -5,6 +5,7 @@ import { PaymentModal } from '../components/pos/PaymentModal';
 import { OfflineIndicator } from '../components/pos/OfflineIndicator';
 import { SalesSummary } from '../components/pos/SalesSummary';
 import { usePOSStore } from '../store/posStore';
+import Layout from '../components/layout/Layout';
 
 const POSPage: React.FC = () => {
   const { showPaymentModal } = usePOSStore();
@@ -12,7 +13,8 @@ const POSPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <Layout>
+      <div className="p-4">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -69,7 +71,8 @@ const POSPage: React.FC = () => {
 
       {/* Modal de pago */}
       {showPaymentModal && <PaymentModal />}
-    </div>
+      </div>
+    </Layout>
   );
 };
 

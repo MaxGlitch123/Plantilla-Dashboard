@@ -5,6 +5,7 @@ import { PrinterService } from '../services/printerService';
 import { Sale } from '../types/pos';
 import Button from '../components/ui/Button';
 import VoidSaleModal from '../components/pos/VoidSaleModal';
+import Layout from '../components/layout/Layout';
 
 const POSSalesPage: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -14,21 +15,40 @@ const POSSalesPage: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('today');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [cashierFilter, setCashierFilter] = useState('all');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [voidingSale, setVoidingSale] = useState<Sale | null>(null);
 
-  // Cargar ventas
+  // Cargar ventas según filtro de fecha
   const loadSales = useCallback(async () => {
     setLoading(true);
     try {
-      const salesData = await POSService.getTodaySales();
+      let salesData: Sale[];
+      const now = new Date();
+      const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      if (dateFilter === 'today') {
+        salesData = await POSService.getTodaySales();
+      } else {
+        let from: string;
+        if (dateFilter === 'this-week') {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay());
+          from = weekStart.toISOString().split('T')[0];
+        } else {
+          // this-month
+          from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        }
+        salesData = await POSService.getSalesByDateRange(from, today);
+      }
+
       setSales(salesData);
     } catch (error) {
       console.error('Error loading sales:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateFilter]);
 
   useEffect(() => {
     loadSales();
@@ -54,6 +74,11 @@ const POSSalesPage: React.FC = () => {
       );
     }
 
+    // Filtro por cajero
+    if (cashierFilter !== 'all') {
+      filtered = filtered.filter(sale => sale.employeeName === cashierFilter);
+    }
+
     // Filtro por método de pago
     if (paymentMethodFilter !== 'all') {
       filtered = filtered.filter(sale => sale.paymentMethod === paymentMethodFilter);
@@ -64,30 +89,11 @@ const POSSalesPage: React.FC = () => {
       filtered = filtered.filter(sale => sale.status === statusFilter);
     }
 
-    // Filtro por fecha
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    switch (dateFilter) {
-      case 'today':
-        filtered = filtered.filter(sale => new Date(sale.saleDate) >= today);
-        break;
-      case 'this-week':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        filtered = filtered.filter(sale => new Date(sale.saleDate) >= weekStart);
-        break;
-      case 'this-month':
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = filtered.filter(sale => new Date(sale.saleDate) >= monthStart);
-        break;
-    }
-
     // Ordenar por fecha descendente
     filtered.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
     
     setFilteredSales(filtered);
-  }, [sales, searchQuery, dateFilter, paymentMethodFilter, statusFilter]);
+  }, [sales, searchQuery, cashierFilter, paymentMethodFilter, statusFilter]);
 
   const handlePrintSale = async (sale: Sale) => {
     try {
@@ -122,12 +128,37 @@ const POSSalesPage: React.FC = () => {
 
   const handleVoidSale = async (reason: string) => {
     if (!voidingSale) return;
-    await POSService.voidSale(voidingSale.id, reason);
-    setVoidingSale(null);
-    // Recargar ventas
-    await loadSales();
-    // Notificar a SalesSummary
-    window.dispatchEvent(new CustomEvent('pos-sale-completed'));
+    
+    try {
+      // Intentar anular en el backend
+      try {
+        await POSService.voidSale(voidingSale.id, reason);
+        console.log('✅ Venta anulada en el backend');
+      } catch (backendError) {
+        console.warn('⚠️ No se pudo anular en backend (puede ser venta local), anulando localmente');
+      }
+
+      // Anular en localStorage
+      const salesData = localStorage.getItem('pos-sales');
+      if (salesData) {
+        const sales: Sale[] = JSON.parse(salesData);
+        const updated = sales.map(s => 
+          s.saleCode === voidingSale.saleCode 
+            ? { ...s, status: 'VOIDED' as const, voidReason: reason, voidedAt: new Date().toISOString() }
+            : s
+        );
+        localStorage.setItem('pos-sales', JSON.stringify(updated));
+      }
+
+      // El backend ya restaura el stock automáticamente en voidSale()
+
+      setVoidingSale(null);
+      await loadSales();
+      window.dispatchEvent(new CustomEvent('pos-sale-completed'));
+    } catch (error) {
+      console.error('❌ Error anulando venta:', error);
+      throw error;
+    }
   };
 
   const activeSales = filteredSales.filter(s => s.status !== 'VOIDED');
@@ -135,7 +166,8 @@ const POSSalesPage: React.FC = () => {
   const totalRevenue = activeSales.reduce((sum, sale) => sum + sale.total, 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <Layout>
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -168,13 +200,13 @@ const POSSalesPage: React.FC = () => {
 
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Búsqueda */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Buscar por código, cajero, cliente o producto..."
+              placeholder="Buscar por código, cliente o producto..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -190,6 +222,18 @@ const POSSalesPage: React.FC = () => {
             <option value="today">Hoy</option>
             <option value="this-week">Esta semana</option>
             <option value="this-month">Este mes</option>
+          </select>
+
+          {/* Filtro por cajero */}
+          <select
+            value={cashierFilter}
+            onChange={(e) => setCashierFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">Todos los cajeros</option>
+            {[...new Set(sales.map(s => s.employeeName).filter(Boolean))].sort().map(name => (
+              <option key={name} value={name}>{name}</option>
+            ))}
           </select>
 
           {/* Filtro por método de pago */}
@@ -252,6 +296,9 @@ const POSSalesPage: React.FC = () => {
                     Cajero
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Canal
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Items
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -295,6 +342,16 @@ const POSSalesPage: React.FC = () => {
                     
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {sale.employeeName}
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        sale.channel === 'pedidosya' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {sale.channel === 'pedidosya' ? 'Pedidos Ya' : 'Local'}
+                      </span>
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -464,7 +521,8 @@ const POSSalesPage: React.FC = () => {
           onClose={() => setVoidingSale(null)}
         />
       )}
-    </div>
+      </div>
+    </Layout>
   );
 };
 

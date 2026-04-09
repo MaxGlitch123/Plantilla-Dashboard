@@ -8,8 +8,7 @@ export const CartView: React.FC = () => {
   const { cart, clearCart, setShowPaymentModal } = usePOSStore();
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.21; // 21% IVA
-  const total = subtotal + tax;
+  const total = subtotal;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleClearCart = () => {
@@ -76,11 +75,6 @@ export const CartView: React.FC = () => {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Subtotal:</span>
               <span className="text-gray-900">${subtotal.toFixed(2)}</span>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">IVA (21%):</span>
-              <span className="text-gray-900">${tax.toFixed(2)}</span>
             </div>
             
             <div className="border-t pt-2">

@@ -1,6 +1,13 @@
 import { Sale, Product, DailySales } from '../types/pos';
 import apiClient from '../api/apiClient';
 
+// Nombre del usuario Auth0 (desde ID token, seteado por AppRoutes)
+let _auth0UserName: string | null = null;
+
+export function setAuth0UserName(name: string | null) {
+  _auth0UserName = name;
+}
+
 export class POSService {
   // Obtener productos para el POS
   static async getProducts(): Promise<Product[]> {
@@ -29,7 +36,6 @@ export class POSService {
         description: product.descripcion || `Producto ${product.denominacion}`,
         image: product.imagenesArticulos?.[0]?.url,
         unitMeasure: product.unidadMedida?.denominacion || 'unidad',
-        stock: 999, // Para POS usamos stock ilimitado
         isActive: true,
         barcode: `POS${product.id}`,
       }));
@@ -352,12 +358,40 @@ export class POSService {
     }
   }
 
+  // Reingresar stock después de anular una venta
+  static async restoreStockAfterVoid(sale: Sale): Promise<void> {
+    try {
+      console.log('📈 Reingresando stock después de anulación...');
+      const ingredients = await this.calculateRequiredIngredients(sale);
+      
+      for (const ingredient of ingredients) {
+        try {
+          const newStock = ingredient.available + ingredient.required;
+          
+          console.log(`🔧 REINGRESANDO: ${ingredient.name}: ${ingredient.available} → ${newStock} (+${ingredient.required})`);
+          
+          await apiClient.put(`/articuloInsumo/${ingredient.ingredientId}/stock`, {
+            stockActual: newStock
+          });
+          
+          console.log(`✅ Stock reingresado para ${ingredient.name}`);
+        } catch (error) {
+          console.error(`❌ Error reingresando stock para ${ingredient.name}:`, error);
+        }
+      }
+      
+      console.log('✅ Stock reingresado correctamente');
+    } catch (error) {
+      console.error('❌ Error restoring stock:', error);
+    }
+  }
+
   // Mapear métodos de pago frontend → backend
   static mapPaymentMethod(frontendMethod: string): string {
     const methodMap: Record<string, string> = {
       'cash': 'EFECTIVO',
       'card': 'MERCADOPAGO', 
-      'transfer': 'MERCADOPAGO'
+      'transfer': 'TRANSFERENCIA'
     };
     
     const mapped = methodMap[frontendMethod.toLowerCase()];
@@ -370,55 +404,39 @@ export class POSService {
     return mapped;
   }
 
+  // Obtener info del empleado autenticado actual (id + nombre)
+  static async getEmployeeInfo(): Promise<{ id: number; name: string }> {
+    try {
+      // Enviar el nombre de Auth0 (ID token) al backend para sincronización
+      const params: Record<string, string> = {};
+      if (_auth0UserName) {
+        params.name = _auth0UserName;
+      }
+      const response = await apiClient.get('/Empleados/me', { params });
+      if (response.data && response.data.id) {
+        const nombre = response.data.nombre || '';
+        const apellido = response.data.apellido || '';
+        return {
+          id: parseInt(response.data.id),
+          name: `${nombre} ${apellido}`.trim() || 'Empleado',
+        };
+      }
+      return { id: 1, name: 'Empleado' };
+    } catch {
+      return { id: 1, name: 'Empleado' };
+    }
+  }
+
   // Obtener el empleado del usuario autenticado actual
   static async getValidEmployeeId(): Promise<number> {
-    try {
-      // Usar nuevo endpoint que devuelve solo MI empleado
-      const response = await apiClient.get('/Empleados/me');
-      
-      if (response.data && response.data.id) {
-        const empleadoId = response.data.id;
-        console.log(`✅ Empleado autenticado ID: ${empleadoId}`);
-        return parseInt(empleadoId);
-      }
-      
-      // Si no se puede obtener el empleado, usar ID por defecto
-      console.warn('No se pudo obtener información del empleado autenticado, usando ID por defecto: 1');
-      return 1;
-      
-    } catch (error: any) {
-      console.error('Error obteniendo empleado autenticado:', error);
-      
-      // Si hay un error 404, significa que el usuario no tiene empleado asignado
-      if (error.response?.status === 404) {
-        throw new Error('Usuario no tiene empleado asignado en el sistema');
-      }
-      
-      // Si hay un error 403, significa que el endpoint no existe aún
-      if (error.response?.status === 403 || error.response?.status === 404) {
-        console.warn('Endpoint /Empleados/me no disponible, usando ID por defecto');
-        return 1;
-      }
-      
-      throw error;
-    }
+    const info = await this.getEmployeeInfo();
+    return info.id;
   }
 
   // Guardar venta en el servidor
   static async uploadSale(sale: Sale): Promise<void> {
     try {
-      console.log('🔍 PASO 1: Verificando disponibilidad de stock...');
-      
-      // Verificar stock antes de procesar la venta
-      const stockCheck = await this.verifyStockAvailability(sale);
-      
-      if (!stockCheck.canSell) {
-        console.error('❌ Stock insuficiente:', stockCheck.missingIngredients);
-        throw new Error(`❌ STOCK INSUFICIENTE:\n${stockCheck.missingIngredients.join('\n')}`);
-      }
-      
-      console.log('✅ Stock verificado - Suficientes ingredientes disponibles');
-      console.log('💰 PASO 2: Procesando venta...');
+      console.log('� Procesando venta...');
       
       // ✅ MAPEO CORRECTO PARA SaleRequestDTO del backend
       const salePayload = {
@@ -433,7 +451,8 @@ export class POSService {
         employeeId: await this.getValidEmployeeId(), // Obtener empleado válido
         notes: sale.notes || `Venta POS - ${sale.saleCode}`,
         localId: sale.saleCode,
-        timestamp: Date.parse(sale.saleDate)
+        timestamp: Date.parse(sale.saleDate),
+        channel: sale.channel || 'local'
       };
 
       console.log(`🔗 Enviando venta al endpoint: /api/pos/sales`);
@@ -441,11 +460,14 @@ export class POSService {
       
       // Usar el endpoint específico del POS con estructura correcta
       const response = await apiClient.post('/api/pos/sales', salePayload);
-      console.log(`✅ PASO 3: Venta ${sale.saleCode} procesada exitosamente`);
+      console.log(`✅ Venta ${sale.saleCode} procesada exitosamente`);
       console.log(`📥 Response:`, response.data);
       
       // El backend ya descuenta stock de ArticuloInsumo automáticamente
       console.log(`🎉 VENTA COMPLETA: ${sale.saleCode} - Stock descontado por el backend`);
+
+      // Eliminar la venta local de localStorage para evitar duplicados
+      this.removeLocalSale(sale.saleCode);
       
     } catch (error: any) {
       console.error('❌ Error uploading sale to POS server:', error);
@@ -456,7 +478,7 @@ export class POSService {
         console.error('  Status:', error.response.status);
         console.error('  Status Text:', error.response.statusText);
         console.error('  Headers:', error.response.headers);
-        console.error('  Data:', error.response.data);
+        console.error('  Data:', JSON.stringify(error.response.data));
         
         // Errores específicos por código de estado
         if (error.response.status === 400) {
@@ -485,22 +507,86 @@ export class POSService {
 
   // Obtener ventas del día actual desde el backend
   static async getTodaySales(): Promise<Sale[]> {
+    // Siempre leer ventas locales del día
+    const today = new Date().toISOString().split('T')[0];
+    const localSales = this.getLocalTodaySales(today);
+
+    let backendSales: Sale[] = [];
     try {
       const response = await apiClient.get('/api/pos/sales/today');
-      const backendSales = response.data || [];
-      
-      return backendSales.map((s: any) => this.mapBackendSaleToFrontend(s));
+      backendSales = (response.data || []).map((s: any) => this.mapBackendSaleToFrontend(s));
     } catch (error) {
-      console.warn('⚠️ Error obteniendo ventas del backend, usando localStorage:', error);
-      // Fallback a localStorage
-      const today = new Date().toISOString().split('T')[0];
+      console.warn('⚠️ Error obteniendo ventas del backend, usando solo localStorage:', error);
+    }
+
+    // Combinar backend + local, sin duplicados (por saleCode)
+    const salesMap = new Map<string, Sale>();
+    backendSales.forEach(s => salesMap.set(s.saleCode, s));
+    localSales.forEach(s => {
+      if (!salesMap.has(s.saleCode)) {
+        salesMap.set(s.saleCode, s);
+      }
+    });
+
+    return Array.from(salesMap.values());
+  }
+
+  private static getLocalTodaySales(today: string): Sale[] {
+    try {
       const salesData = localStorage.getItem('pos-sales');
       if (salesData) {
         const sales: Sale[] = JSON.parse(salesData);
-        return sales.filter(sale => sale.saleDate.startsWith(today));
+        return sales
+          .filter(sale => sale.saleDate?.startsWith(today))
+          .map(sale => ({ ...sale, status: sale.status || 'ACTIVE' }));
       }
-      return [];
+    } catch (error) {
+      console.warn('⚠️ Error leyendo ventas locales:', error);
     }
+    return [];
+  }
+
+  // Obtener ventas por rango de fechas
+  static async getSalesByDateRange(from: string, to: string): Promise<Sale[]> {
+    let backendSales: Sale[] = [];
+    try {
+      const response = await apiClient.get(`/api/pos/sales?from=${from}&to=${to}`);
+      backendSales = (response.data || []).map((s: any) => this.mapBackendSaleToFrontend(s));
+    } catch (error) {
+      console.warn('⚠️ Error obteniendo ventas por rango:', error);
+    }
+
+    // También incluir ventas locales en el rango (las POS-XXXXX sin sincronizar)
+    const localSales = this.getLocalSalesByDateRange(from, to);
+
+    // Combinar backend + local, sin duplicados (por saleCode)
+    const salesMap = new Map<string, Sale>();
+    backendSales.forEach(s => salesMap.set(s.saleCode, s));
+    localSales.forEach(s => {
+      if (!salesMap.has(s.saleCode)) {
+        salesMap.set(s.saleCode, s);
+      }
+    });
+
+    return Array.from(salesMap.values());
+  }
+
+  private static getLocalSalesByDateRange(from: string, to: string): Sale[] {
+    try {
+      const salesData = localStorage.getItem('pos-sales');
+      if (salesData) {
+        const sales: Sale[] = JSON.parse(salesData);
+        return sales
+          .filter(sale => {
+            const saleDate = sale.saleDate?.split('T')[0];
+            return saleDate && saleDate >= from && saleDate <= to;
+          })
+          .map(sale => ({ ...sale, status: sale.status || 'ACTIVE' }));
+      }
+    } catch (error) {
+      console.warn('⚠️ Error leyendo ventas locales por rango:', error);
+    }
+    return [];
   }
 
   // Anular una venta
@@ -520,6 +606,7 @@ export class POSService {
       'MERCADOPAGO': 'card',
       'CREDIT_CARD': 'card',
       'DEBIT_CARD': 'card',
+      'TRANSFERENCIA': 'transfer',
       'QR': 'transfer',
     };
 
@@ -544,6 +631,7 @@ export class POSService {
       discount: 0,
       total: s.total || 0,
       paymentMethod: paymentMap[s.paymentMethod] || 'cash',
+      channel: s.channel || 'local',
       notes: '',
       printed: false,
       synced: s.synced ?? true,
@@ -551,6 +639,21 @@ export class POSService {
       voidedAt: s.voidedAt,
       voidReason: s.voidReason,
     };
+  }
+
+  // Eliminar una venta local de localStorage (tras sync exitoso con backend)
+  private static removeLocalSale(saleCode: string): void {
+    try {
+      const salesData = localStorage.getItem('pos-sales');
+      if (salesData) {
+        const sales: Sale[] = JSON.parse(salesData);
+        const filtered = sales.filter(s => s.saleCode !== saleCode);
+        localStorage.setItem('pos-sales', JSON.stringify(filtered));
+        console.log(`🗑️ Venta local ${saleCode} eliminada (ya existe en backend)`);
+      }
+    } catch (error) {
+      console.warn('⚠️ Error eliminando venta local:', error);
+    }
   }
 
   // Guardar venta localmente

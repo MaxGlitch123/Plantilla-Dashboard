@@ -563,6 +563,9 @@ class SessionCleanupService {
       'language',
       'user-preferences',
       'app-settings',
+      'pos-sales',
+      'pos-storage',
+      'pos-last-sale',
       ...preserveKeys
     ];
 

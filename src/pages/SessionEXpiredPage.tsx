@@ -145,6 +145,7 @@ const handleCompleteLogout = async () => {
         clearCookies: true,
         clearCache: true,
         clearAuth0Storage: true,
+        preserveKeys: ['pos-sales', 'pos-storage', 'pos-last-sale'],
         logCleanup: true
       });
 
