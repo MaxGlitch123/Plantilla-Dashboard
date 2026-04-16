@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Layout } from '../components/layout/Layout';
-import { DollarSign, Clock, CreditCard, Banknote, ArrowRightLeft, TrendingUp, AlertCircle, CheckCircle, History, Play, Square } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { Clock, CreditCard, Banknote, ArrowRightLeft, TrendingUp, AlertCircle, CheckCircle, History, Play, Square, Search, Printer, CalendarDays } from 'lucide-react';
 import { POSService } from '../services/posService';
 import apiClient from '../api/apiClient';
 
@@ -34,6 +34,14 @@ const CashRegisterPage: React.FC = () => {
   const [showHistoryDetail, setShowHistoryDetail] = useState<Shift | null>(null);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'current' | 'history'>('current');
+  const [toast, setToast] = useState<string | null>(null);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyDateFilter, setHistoryDateFilter] = useState('');
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -94,6 +102,7 @@ const CashRegisterPage: React.FC = () => {
       });
       setActiveShift(res.data);
       setOpeningAmount('');
+      showToast('Caja abierta correctamente');
       await loadData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al abrir turno');
@@ -116,6 +125,7 @@ const CashRegisterPage: React.FC = () => {
       setShowCloseModal(false);
       setClosingAmount('');
       setClosingNotes('');
+      showToast('Caja cerrada correctamente');
       await loadData();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al cerrar turno');
@@ -143,6 +153,50 @@ const CashRegisterPage: React.FC = () => {
     return `${hours}h ${minutes}m`;
   };
 
+  const filteredHistory = shiftHistory.filter((s) => {
+    const matchesSearch = !historySearch ||
+      s.employeeName.toLowerCase().includes(historySearch.toLowerCase());
+    const matchesDate = !historyDateFilter ||
+      new Date(s.startTime).toISOString().slice(0, 10) === historyDateFilter;
+    return matchesSearch && matchesDate;
+  });
+
+  const handlePrintShift = (shift: Shift) => {
+    const w = window.open('', '_blank', 'width=400,height=600');
+    if (!w) return;
+    w.document.write(`
+      <html><head><title>Cierre de Caja #${shift.id}</title>
+      <style>body{font-family:monospace;padding:20px;font-size:13px}
+      h2{text-align:center;margin:0 0 4px}
+      .line{border-top:1px dashed #000;margin:8px 0}
+      .row{display:flex;justify-content:space-between}
+      .bold{font-weight:bold}
+      </style></head><body>
+      <h2>CIERRE DE CAJA</h2>
+      <p style="text-align:center;margin:0 0 8px">Turno #${shift.id}</p>
+      <div class="line"></div>
+      <div class="row"><span>Cajero:</span><span>${shift.employeeName}</span></div>
+      <div class="row"><span>Apertura:</span><span>${formatDate(shift.startTime)} ${formatTime(shift.startTime)}</span></div>
+      <div class="row"><span>Cierre:</span><span>${shift.endTime ? `${formatDate(shift.endTime)} ${formatTime(shift.endTime)}` : '-'}</span></div>
+      <div class="line"></div>
+      <div class="row bold"><span>Total Vendido:</span><span>${formatCurrency(shift.totalSales)}</span></div>
+      <div class="row"><span>Ventas:</span><span>${shift.salesCount}</span></div>
+      <div class="line"></div>
+      <div class="row"><span>Efectivo:</span><span>${formatCurrency(shift.cashSales)}</span></div>
+      <div class="row"><span>Tarjeta:</span><span>${formatCurrency(shift.cardSales)}</span></div>
+      <div class="row"><span>Transferencia:</span><span>${formatCurrency(shift.transferSales)}</span></div>
+      <div class="line"></div>
+      <div class="row"><span>Inicio de caja:</span><span>${formatCurrency(shift.openingCash)}</span></div>
+      <div class="row"><span>Efectivo esperado:</span><span>${formatCurrency(shift.expectedCash)}</span></div>
+      ${shift.closingCash !== null ? `<div class="row"><span>Efectivo contado:</span><span>${formatCurrency(shift.closingCash)}</span></div>` : ''}
+      ${shift.difference !== null ? `<div class="row bold"><span>Diferencia:</span><span>${shift.difference === 0 ? 'Cuadra ✓' : formatCurrency(shift.difference)}</span></div>` : ''}
+      ${shift.notes ? `<div class="line"></div><p>Notas: ${shift.notes}</p>` : ''}
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -155,6 +209,14 @@ const CashRegisterPage: React.FC = () => {
 
   return (
     <Layout>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
+          <CheckCircle size={18} />
+          {toast}
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -330,15 +392,46 @@ const CashRegisterPage: React.FC = () => {
         {tab === 'history' && (
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div className="p-4 border-b">
-              <h2 className="font-semibold">Historial de Turnos</h2>
+              <h2 className="font-semibold mb-3">Historial de Turnos</h2>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por cajero..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="date"
+                    value={historyDateFilter}
+                    onChange={(e) => setHistoryDateFilter(e.target.value)}
+                    className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                {(historySearch || historyDateFilter) && (
+                  <button
+                    onClick={() => { setHistorySearch(''); setHistoryDateFilter(''); }}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
             </div>
-            {shiftHistory.length === 0 ? (
+            {filteredHistory.length === 0 ? (
               <div className="p-8 text-center text-gray-400">
-                No hay turnos registrados aún.
+                {shiftHistory.length === 0
+                  ? 'No hay turnos registrados aún.'
+                  : 'No se encontraron turnos con los filtros aplicados.'}
               </div>
             ) : (
               <div className="divide-y">
-                {shiftHistory.map((shift) => (
+                {filteredHistory.map((shift) => (
                   <div
                     key={shift.id}
                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -585,6 +678,16 @@ const CashRegisterPage: React.FC = () => {
               >
                 Cerrar
               </button>
+
+              {showHistoryDetail.status !== 'ACTIVE' && (
+                <button
+                  onClick={() => handlePrintShift(showHistoryDetail)}
+                  className="w-full py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-900 mt-2 flex items-center justify-center gap-2"
+                >
+                  <Printer size={16} />
+                  Imprimir resumen
+                </button>
+              )}
             </div>
           </div>
         </div>

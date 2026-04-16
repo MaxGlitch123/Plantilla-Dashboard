@@ -130,10 +130,13 @@ export class OfflineService {
   // Verificar si hay conexión a internet
   static async testConnection(): Promise<boolean> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetch('/api/health', { 
         method: 'HEAD',
-        timeout: 5000 
+        signal: controller.signal 
       });
+      clearTimeout(timeoutId);
       return response.ok;
     } catch {
       return false;

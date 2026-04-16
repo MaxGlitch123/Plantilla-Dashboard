@@ -117,14 +117,7 @@ export const ProductSearch: React.FC = () => {
     }, 100);
   };
 
-  // Función de emergencia para cargar productos de muestra (solo para debugging)
-  const forceLoadSampleProducts = () => {
-    console.log('🚨 Carga forzada de productos de muestra activada');
-    const sampleProducts = POSService.getSampleProducts();
-    console.log(`📋 ${sampleProducts.length} productos de muestra forzados:`, sampleProducts);
-    setAllProducts(sampleProducts);
-    setProducts(sampleProducts.slice(0, 20));
-  };
+
 
   const handleInputFocus = () => {
     setShowSuggestions(true);

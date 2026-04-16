@@ -15,7 +15,8 @@ import {
   Receipt,
   Globe,
   ChefHat,
-  Wallet
+  Wallet,
+  BarChart2
 } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -42,25 +43,25 @@ const SIDEBAR_ITEMS = [
     label: 'Punto de Venta',
     icon: <ShoppingCart size={20} />,
     path: '/pos',
-    allowedRoles: ['cajero', 'admin'],
+    allowedRoles: ['cajero'],
   },
   {
     label: 'Ventas POS',
     icon: <Receipt size={20} />,
     path: '/pos/sales',
-    allowedRoles: ['cajero', 'admin'],
+    allowedRoles: ['cajero'],
   },
   {
     label: 'Productos POS',
     icon: <ChefHat size={20} />,
     path: '/pos/products',
-    allowedRoles: ['cajero', 'admin'],
+    allowedRoles: ['cajero'],
   },
   {
     label: 'Cierre de Caja',
     icon: <Wallet size={20} />,
     path: '/cash-register',
-    allowedRoles: ['cajero', 'admin'],
+    allowedRoles: ['cajero'],
   },
   {
     label: 'Órdenes Web',
@@ -92,7 +93,12 @@ const SIDEBAR_ITEMS = [
     path: '/unit-measures',
     allowedRoles: ['admin'],
   },
- 
+  {
+    label: 'Reportes',
+    icon: <BarChart2 size={20} />,
+    path: '/reports',
+    allowedRoles: ['admin', 'manager'],
+  },
 ];
 
 interface SidebarProps {

@@ -1,4 +1,4 @@
-import axios, { InternalAxiosRequestConfig } from "axios";
+import axios from "axios";
 
 // Extender la configuración de Axios para soportar la propiedad _retry
 declare module 'axios' {

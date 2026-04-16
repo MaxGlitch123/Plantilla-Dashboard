@@ -44,9 +44,9 @@ export function RecipeModal({ open, onClose, product }: Props) {
         
         // Mapear la estructura de datos correcta
         const mappedItems = recipe.map((item) => ({
-          ingredientId: parseInt(item.ingredientId?.toString() || '0'),
-          ingredientName: item.ingredientName,
-          quantityUnits: item.quantity || 0,
+          ingredientId: item.ingredient?.id ?? 0,
+          ingredientName: item.ingredient?.name ?? '',
+          quantityUnits: item.quantityUnits || 0,
         }));
         
         console.log(`✅ RecipeModal: ${mappedItems.length} ingredientes mapeados`, mappedItems);
