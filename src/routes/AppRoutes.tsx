@@ -46,8 +46,6 @@ const POS_ROLES = ['cajero']; // Solo cajero opera el POS
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth0();
   
-  console.log('🌍 PublicRoute: Checking access', { isAuthenticated, isLoading });
-  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
@@ -60,7 +58,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
   
   if (isAuthenticated) {
-    console.log('🌍 PublicRoute: User already authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -70,13 +67,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppRoutes: React.FC = () => {
   const { getAccessTokenSilently, user, isAuthenticated, isLoading } = useAuth0();
 
-  console.log('🔄 AppRoutes renderizando - Estado auth:', { 
-    isAuthenticated, 
-    isLoading, 
-    user: user?.email,
-    pathname: window.location.pathname
-  });
-
   // Usar un selector estable para evitar regeneraciones
   const setToken = useAuthStore(state => state.setToken);
   
@@ -84,17 +74,14 @@ const AppRoutes: React.FC = () => {
   const tokenGetterWrapper = useMemo(() => {
     return async () => {
       try {
-        // Obtener el token actual usando la API de Zustand
+        // Use cached token if valid
         const currentToken = useAuthStore.getState().token;
         
         if (currentToken && currentToken.length > 20) {
-          console.log('🎫 AppRoutes: Using cached token');
           return currentToken;
         }
         
-        // Si no hay token o no es válido, intentamos obtenerlo
         if (isAuthenticated) {
-          console.log('🎫 AppRoutes: Fetching new token from Auth0');
           const options: GetTokenSilentlyOptions = {
             authorizationParams: {
               audience: "https://buensabor/",
@@ -105,7 +92,6 @@ const AppRoutes: React.FC = () => {
           
           const newToken = await getAccessTokenSilently(options);
           if (newToken) {
-            console.log('🎫 AppRoutes: New token obtained and stored');
             setToken(newToken);
             return newToken;
           }
@@ -113,7 +99,7 @@ const AppRoutes: React.FC = () => {
         
         throw new Error('No se pudo obtener el token');
       } catch (error) {
-        console.error('🎫 AppRoutes: Token acquisition failed', error);
+        console.error('AppRoutes: Token acquisition failed', error);
         throw error;
       }
     };
@@ -121,7 +107,6 @@ const AppRoutes: React.FC = () => {
   
   // Configurar el token getter una sola vez
   useEffect(() => {
-    console.log('⚙️ AppRoutes: Configuring token getter');
     setTokenGetter(tokenGetterWrapper);
   }, [tokenGetterWrapper]);
 
@@ -139,16 +124,7 @@ const AppRoutes: React.FC = () => {
   
   const roles: string[] = user?.[audienceKey] || [];
   
-  console.log('👤 Usuario y roles:', { 
-    email: user?.email, 
-    roles, 
-    audienceKey,
-    isAuthenticated,
-    isLoading
-  });
-
   if (isLoading) {
-    console.log('⏳ Cargando autenticación...');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -162,15 +138,12 @@ const AppRoutes: React.FC = () => {
 
   // 👇 Si está autenticado pero no tiene roles → página especial
   if (isAuthenticated && roles.length === 0) {
-    console.log('❌ Usuario sin roles - Redirigiendo a NoRolePage');
     return (
       <Routes>
         <Route path="*" element={<NoRolePage />} />
       </Routes>
     );
   }
-
-  console.log('✅ Renderizando rutas principales');
 
   return (
     <>

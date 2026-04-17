@@ -14,14 +14,14 @@ export const useUserRol = (): 'ADMIN' | 'CHEF' | 'DELIVERY' | 'CAJERO' | undefin
   const rolesKey = Object.keys(user).find(key => key.includes('roles'));
   if (!rolesKey) {
     console.warn('useUserRol: No roles key found in user object');
-    return 'ADMIN'; // Fallback a ADMIN si no hay clave de roles
+    return undefined;
   }
 
   // Verificar que los roles sean un array
   const roles = user[rolesKey];
   if (!Array.isArray(roles) || roles.length === 0) {
     console.warn('useUserRol: Roles is not an array or is empty');
-    return 'ADMIN'; // Fallback a ADMIN si no hay roles
+    return undefined;
   }
   
   const roleStr = typeof roles[0] === 'string' ? roles[0] : '';

@@ -37,22 +37,8 @@ export const getToken = async (): Promise<string | null> => {
 
 // Determinar la URL base usando las variables de entorno o fallback a proxy
 const getBaseUrl = () => {
-  // Si estamos en desarrollo, usar el proxy
-  if (import.meta.env.DEV) {
-    console.log('🔧 Modo desarrollo - Usando proxy /api-proxy');
-    return '/api-proxy';
-  }
-  
-  // Si hay una variable de entorno definida, usarla
-  const envApiUrl = import.meta.env.VITE_API_URL;
-  if (envApiUrl) {
-    console.log('🔧 Usando VITE_API_URL:', envApiUrl);
-    return envApiUrl;
-  }
-  
-  console.log('🔧 Fallback - Usando proxy /api-proxy');
-  // Fallback al proxy
-  return '/api-proxy';
+  if (import.meta.env.DEV) return '/api-proxy';
+  return import.meta.env.VITE_API_URL || '/api-proxy';
 };
 
 // Instancia Axios configurada
@@ -62,8 +48,6 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-console.log('🔧 ApiClient configurado con baseURL:', apiClient.defaults.baseURL);
 
 // Interceptor para agregar token automáticamente
 apiClient.interceptors.request.use(

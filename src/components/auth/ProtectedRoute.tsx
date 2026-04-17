@@ -57,13 +57,6 @@ export const ProtectedRoute = ({
   const token = useAuthStore(state => state.token);
   const rolFromStore = useAuthStore(state => state.rol);
 
-  console.log('🔐 ProtectedRoute: Checking access for', location.pathname, {
-    allowedRoles,
-    userAuthenticated: isAuthenticated,
-    hasUser: !!user,
-    enableAdvancedGuard
-  });
-
   // Obtener y mapear el rol del usuario desde el token de Auth0
   const userRole: string | null = useMemo(() => {
     if (!user) return null;
@@ -75,7 +68,6 @@ export const ProtectedRoute = ({
     if (Array.isArray(rolesFromClaim) && rolesFromClaim.length > 0) {
       const role = rolesFromClaim[0];
       const mappedRole = typeof role === "string" ? mapRole(role) : null;
-      console.log('🎭 ProtectedRoute: Role from claim:', role, '→', mappedRole);
       return mappedRole;
     }
     
@@ -84,7 +76,6 @@ export const ProtectedRoute = ({
     const raw = key && user[key];
     const role = Array.isArray(raw) ? raw[0] : raw;
     const mappedRole = typeof role === "string" ? mapRole(role) : null;
-    console.log('🎭 ProtectedRoute: Role from fallback:', role, '→', mappedRole);
 
     return mappedRole;
   }, [user]);
@@ -92,7 +83,6 @@ export const ProtectedRoute = ({
   // Actualizar el rol si cambia (separado para evitar un loop de dependencias)
   useEffect(() => {
     if (user && userRole && rolFromStore !== userRole) {
-      console.log('🔄 ProtectedRoute: Updating role in store:', userRole);
       setRol(userRole);
     }
   }, [user, userRole, rolFromStore, setRol]);
@@ -110,7 +100,6 @@ export const ProtectedRoute = ({
     // Obtener el token una sola vez
     const getToken = async () => {
       try {
-        console.log('🎫 ProtectedRoute: Getting access token...');
         const newToken = await getAccessTokenSilently({
           authorizationParams: {
             audience: "https://buensabor/",
@@ -119,11 +108,9 @@ export const ProtectedRoute = ({
         
         // Verificar que el componente siga montado antes de actualizar el estado
         if (isMounted && newToken) {
-          console.log('🎫 ProtectedRoute: Token obtained and stored');
           setToken(newToken);
         }
       } catch (err) {
-        console.warn('🎫 ProtectedRoute: Failed to get token', err);
         // Error silencioso, no hacer nada más
       }
     };
@@ -142,28 +129,23 @@ export const ProtectedRoute = ({
     const role = getRoleFromUser(user);
 
     if (role === 'guest') {
-      console.log('❌ ProtectedRoute: User has guest role, redirecting to /no-role');
       return { canAccess: false, redirectTo: '/no-role', reason: 'guest_role' };
     }
 
     // Validaciones defensivas
     if (!allowedRoles || !Array.isArray(allowedRoles)) {
-      console.log('⚠️ ProtectedRoute: Invalid allowed roles configuration, redirecting to dashboard');
       return { canAccess: false, redirectTo: '/dashboard', reason: 'invalid_config' };
     }
 
     // Detectar si es un cliente intentando acceder a área administrativa
     if (userRole === 'client' && !allowedRoles.includes('client')) {
-      console.log('🚫 ProtectedRoute: Client attempting admin access, redirecting to access denied');
       return { canAccess: false, redirectTo: '/client-access-denied', reason: 'client_admin_access' };
     }
 
     if (!userRole || !allowedRoles.includes(userRole)) {
-      console.log('❌ ProtectedRoute: User role not allowed', { userRole, allowedRoles });
       return { canAccess: false, redirectTo: '/dashboard', reason: 'insufficient_role' };
     }
 
-    console.log('✅ ProtectedRoute: Role access granted', { userRole, allowedRoles });
     return { canAccess: true };
   };
 
@@ -175,7 +157,6 @@ export const ProtectedRoute = ({
         enableStorageValidation={true}
         enableTokenValidation={true}
         onProblemDetected={(problem) => {
-          console.warn('🚨 ProtectedRoute: Authentication problem detected in guard:', problem);
         }}
       >
         {/* Once authenticated, validate roles */}
@@ -194,7 +175,6 @@ export const ProtectedRoute = ({
 
           // Basic auth check (the guard handles this, but double-check)
           if (!isAuthenticated || !user) {
-            console.log('❌ ProtectedRoute: Not authenticated, redirecting to login');
             return <Navigate to="/login" replace />;
           }
 
@@ -212,7 +192,6 @@ export const ProtectedRoute = ({
   }
 
   // Legacy mode - without advanced guard
-  console.log('ℹ️ ProtectedRoute: Using legacy authentication mode');
 
   // Loading
   if (isLoading) return <p>Cargando...</p>;

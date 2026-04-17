@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Role } from '../types';
+import { User } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -13,7 +13,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data
+// Legacy mock users - replaced by Auth0 in production
 const MOCK_USERS: User[] = [
   {
     id: '1',
@@ -57,7 +57,7 @@ const MOCK_USERS: User[] = [
   }
 ];
 
-// All passwords are 'password' in this mock
+// Legacy mock passwords - replaced by Auth0 in production
 const MOCK_PASSWORDS: Record<string, string> = {
   'admin': 'password',
   'manager': 'password',
