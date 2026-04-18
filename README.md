@@ -164,8 +164,3 @@ npm run dev
 - Desarrollo: Máximo Bazán Leiva Agustín, Jeremías Daniel Luzuriaga, David Exequiel Álvarez
 
 ---
-
-## 📝 Licencia
-
-Este proyecto es parte de un trabajo académico. Todos los derechos reservados.
-
