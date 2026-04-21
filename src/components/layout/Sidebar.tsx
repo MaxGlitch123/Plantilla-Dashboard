@@ -145,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
   );
 
   const handleLogout = () => {
-    logout({ logoutParams: { returnTo: window.location.origin } });
+    logout({ logoutParams: { returnTo: `${window.location.origin}/login` } });
   };
 
   return (

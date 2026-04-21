@@ -41,13 +41,7 @@ export const fetchPedidos = async (): Promise<PedidoResponse[]> => {
     return response.data;
     
   } catch (error: any) {
-    console.error('❌ Error CRÍTICO en fetchPedidos:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      stack: error.stack
-    });
+    console.error('❌ Error en fetchPedidos:', error.response?.status, error.message);
     
     // Si es 401, problema de autenticación
     if (error.response?.status === 401) {
@@ -128,9 +122,7 @@ export const fetchPedidoDetalle = async (
 
 // ✅ NUEVO: Crear pedido con descuento inmediato de stock
 export const createOrder = async (orderData: any): Promise<PedidoResponse> => {
-  console.log('📝 NUEVO: Creando pedido con descuento inmediato de stock');
-  console.log('🔥 Items que descontarán stock inmediatamente:', orderData.items);
-  console.log('📊 Datos del pedido a enviar:', JSON.stringify(orderData, null, 2));
+
   
   try {
     // Agregar flag para indicar descuento inmediato
@@ -161,12 +153,7 @@ export const createOrder = async (orderData: any): Promise<PedidoResponse> => {
     
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error creando pedido con descuento de stock:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      orderData: orderData
-    });
+    console.error('❌ Error creando pedido:', error.response?.status, error.message);
     
     // Mensajes específicos para errores comunes
     if (error.response?.status === 400) {

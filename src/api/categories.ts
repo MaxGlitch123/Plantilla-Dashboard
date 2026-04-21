@@ -14,7 +14,7 @@ export const fetchCategories = async (): Promise<FlatCategory[]> => {
     // Usar directamente el endpoint que funciona según los logs
     const res = await apiClient.get('/categoria/listar');
     
-    console.log('� Respuesta cruda del backend:', JSON.stringify(res.data, null, 2));
+
     
     if (res.data && Array.isArray(res.data)) {
       console.log(`📊 Se obtuvieron ${res.data.length} categorías principales`);

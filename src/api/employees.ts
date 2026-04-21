@@ -19,14 +19,6 @@ export const createEmployee = async (data: {
   // Usar los roles seleccionados directamente
   const rolesToSend = [...data.roles];
   
-  console.log('🔍 Enviando petición para crear usuario con roles:', rolesToSend);
-  console.log('📊 Datos completos del empleado:', {
-    ...data,
-    roles: rolesToSend,
-    email: data.userEmail,
-    connection: "Username-Password-Authentication"
-  });
-  
   try {
     const response = await apiClient.post('/api/admin/users/createUser', {
       ...data,
@@ -37,13 +29,7 @@ export const createEmployee = async (data: {
     
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error al crear empleado:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      rolesSent: rolesToSend
-    });
+    console.error('❌ Error al crear empleado:', error.response?.status, error.message);
     throw error;
   }
 };

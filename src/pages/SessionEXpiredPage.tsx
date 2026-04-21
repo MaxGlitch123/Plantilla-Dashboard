@@ -20,18 +20,9 @@ const SessionExpiredPage: React.FC = () => {
     const [autoLogoutEnabled, setAutoLogoutEnabled] = useState(true);
     const [sessionProblem, setSessionProblem] = useState<SessionProblem | null>(null);
 
-    console.log('🚪 === SESSION EXPIRED PAGE LOADED ===')
-    console.log('📊 Auth0 State:', { 
-        isAuthenticated, 
-        isLoading, 
-        user: user?.email,
-        error: error?.message
-  });
-
     useEffect(() => {
         const problem = analyzeSessionProblem();
         setSessionProblem(problem);
-        console.log('🔍 Session problem analyzed:', problem);
     }, [isAuthenticated, isLoading, user, error]);
 
     useEffect(() => {
@@ -48,13 +39,6 @@ const SessionExpiredPage: React.FC = () => {
 }, [countdown, autoLogoutEnabled]);
 
 const analyzeSessionProblem = (): SessionProblem => {
-    console.log('🔍 Analizando problema de sesión...', {
-        isAuthenticated,
-        isLoading,
-        hasUser: !!user,
-        hasError: !!error,
-        userEmail: user?.email
-    });
 
     // 1. Error explícito de Auth0
     if (error) {

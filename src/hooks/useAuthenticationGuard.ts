@@ -97,10 +97,9 @@ export const useAuthenticationGuard = (options: UseAuthenticationGuardOptions = 
       try {
         log('🔍 Validating tokens...');
         
-        // Try to get access token silently
+        // Try to get access token silently (use cache to avoid failures with 3rd-party cookie restrictions)
         const accessToken = await getAccessTokenSilently({
           timeoutInSeconds: 10,
-          cacheMode: 'off'
         });
 
         if (!accessToken || accessToken.trim() === '') {
