@@ -152,8 +152,6 @@ const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({
   const { isLoading } = useAuth0();
   const location = useLocation();
 
-  console.log('🛡️ AuthenticationGuard: Rendering guard for', location.pathname);
-
   const {
     isValidating,
     problem,
@@ -167,7 +165,6 @@ const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({
     enableStorageValidation,
     enableTokenValidation,
     onProblemDetected: (detectedProblem: AuthenticationProblem) => {
-      console.log('🚨 AuthenticationGuard: Problem detected', detectedProblem);
       onProblemDetected?.(detectedProblem);
     }
   });
@@ -201,7 +198,6 @@ const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({
 
   // If auto-redirect is disabled and we have a problem, show fallback or blocked indicator
   if (!enableAutoRedirect && problem && shouldBlock) {
-    console.log('🛡️ AuthenticationGuard: Blocking access due to problem:', problem);
     
     if (fallback) {
       return <>{fallback}</>;
@@ -221,7 +217,6 @@ const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({
 
   // If auto-redirect is enabled and we have a problem, redirect
   if (enableAutoRedirect && problem && shouldBlock) {
-    console.log('🔄 AuthenticationGuard: Auto-redirecting to', redirectTo, 'due to problem:', problem);
     return (
       <Navigate 
         to={redirectTo} 
@@ -237,7 +232,6 @@ const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({
 
   // If we can proceed, render children
   if (canProceed) {
-    console.log('✅ AuthenticationGuard: Access granted for', location.pathname);
     return <>{children}</>;
   }
 

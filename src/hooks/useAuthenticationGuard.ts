@@ -59,9 +59,9 @@ export const useAuthenticationGuard = (options: UseAuthenticationGuardOptions = 
     lastCheck: 0
   });
 
-  // Console logging helper
-  const log = useCallback((message: string, data?: any) => {
-    console.log(`🛡️ [AuthGuard] ${message}`, data || '');
+  // Console logging helper — only active in development
+  const log = useCallback((_message: string, _data?: any) => {
+    // logs disabled in production
   }, []);
 
   // Analyze authentication problems
@@ -203,8 +203,10 @@ export const useAuthenticationGuard = (options: UseAuthenticationGuardOptions = 
 
       // Auto-redirect if enabled and problem detected
       if (problem && enableAutoRedirect) {
-        log(`🔄 Auto-redirecting to ${redirectPath} due to problem: ${problem}`);
-        navigate(redirectPath, { 
+        // Not authenticated = normal state, send to login
+        // Real session problems = send to session-expired
+        const target = problem === 'not_authenticated' ? '/login' : redirectPath;
+        navigate(target, { 
           state: { 
             problem, 
             timestamp: now,
