@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import { useAuth0 } from '@auth0/auth0-react';
-
+//test
 
 const App: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth0();
