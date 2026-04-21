@@ -485,6 +485,7 @@ const ProductsPage: React.FC = () => {
                 </p>
 
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  {/* Anterior */}
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                     disabled={currentPage === 1}
@@ -493,19 +494,44 @@ const ProductsPage: React.FC = () => {
                     &laquo;
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
-                          ? 'bg-amber-50 border-amber-500 text-amber-600'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {(() => {
+                    const delta = 2; // páginas a cada lado de la actual
+                    const pages: (number | '...')[] = [];
+                    const left = Math.max(2, currentPage - delta);
+                    const right = Math.min(totalPages - 1, currentPage + delta);
 
+                    // Siempre mostrar página 1
+                    pages.push(1);
+                    if (left > 2) pages.push('...');
+                    for (let i = left; i <= right; i++) pages.push(i);
+                    if (right < totalPages - 1) pages.push('...');
+                    if (totalPages > 1) pages.push(totalPages);
+
+                    return pages.map((page, idx) =>
+                      page === '...' ? (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-400 select-none"
+                        >
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            page === currentPage
+                              ? 'bg-amber-50 border-amber-500 text-amber-600'
+                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    );
+                  })()}
+
+                  {/* Siguiente */}
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                     disabled={currentPage === totalPages}
