@@ -69,7 +69,7 @@ const ClientAccessDeniedPage: React.FC = () => {
               <h3 className="font-medium text-orange-800">¿Por qué veo esto?</h3>
             </div>
             <p className="text-orange-700 text-sm mb-3">
-              Estás intentando acceder al <strong>panel administrativo</strong> de El Buen Sabor, 
+              Estás intentando acceder al <strong>panel administrativo</strong> de City fast, 
               pero tu cuenta actual tiene rol de <strong>Cliente</strong>.
             </p>
             <p className="text-orange-700 text-sm">

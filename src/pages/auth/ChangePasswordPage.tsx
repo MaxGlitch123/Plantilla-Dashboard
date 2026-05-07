@@ -24,7 +24,7 @@ const ChangePasswordPage: React.FC = () => {
           <div className="inline-flex items-center justify-center bg-white rounded-full p-3 shadow-md mb-4">
             <Coffee className="h-10 w-10 text-red-600" />
           </div>
-          <h1 className="text-3xl font-serif font-bold text-gray-900">El Buen Sabor</h1>
+          <h1 className="text-3xl font-serif font-bold text-gray-900"></h1>
           <p className="mt-2 text-gray-600">Sistema de Gestión de Restaurante</p>
         </div>
         
@@ -44,7 +44,7 @@ const ChangePasswordPage: React.FC = () => {
         
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            &copy; {new Date().getFullYear()} El Buen Sabor. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} City Fast. Todos los derechos reservados.
           </p>
         </div>
       </div>
