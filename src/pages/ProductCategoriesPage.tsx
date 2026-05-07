@@ -263,8 +263,8 @@ const ProductCategoriesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {subcategory.isRoot ? (
-                        <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded-full text-xs font-medium italic">
-                          Categoría raíz
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${subcategory.esInsumo ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                          {subcategory.esInsumo ? 'Insumos' : 'Comida'}
                         </span>
                       ) : (
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
