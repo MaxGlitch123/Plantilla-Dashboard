@@ -26,23 +26,28 @@ const flattenCategories = (categoriesFromApi: Category[]): Category[] => {
   const flattened: Category[] = [];
 
   for (const cat of categoriesFromApi) {
+    // Only process insumo root categories
+    if (!cat.esInsumo) continue;
+
+    // Add insumo subcategories
     for (const sub of cat.subcategorias || []) {
-      flattened.push({
-        id: sub.id,
-        denominacion: sub.denominacion,
-        esInsumo: false,
-        subcategorias: [],
-      });
+      if (sub.esInsumo) {
+        flattened.push({
+          id: sub.id,
+          denominacion: sub.denominacion,
+          esInsumo: true,
+          subcategorias: [],
+        });
+      }
     }
 
-    if (cat.esInsumo) {
-      flattened.push({
-        id: cat.id,
-        denominacion: cat.denominacion,
-        esInsumo: true,
-        subcategorias: [],
-      });
-    }
+    // Add the root insumo category itself
+    flattened.push({
+      id: cat.id,
+      denominacion: cat.denominacion,
+      esInsumo: true,
+      subcategorias: [],
+    });
   }
 
   return flattened;
