@@ -40,16 +40,26 @@ const ProductCategoriesPage: React.FC = () => {
     }
   };
 
-  // Aplanar subcategorías con información de categoría padre
+  // Aplanar categorías: incluye raíces Y sus hijos
   const getAllSubcategories = () => {
-    const allSubcategories: Array<Subcategoria & { parentCategory: string }> = [];
+    const allSubcategories: Array<Subcategoria & { parentCategory: string; isRoot?: boolean }> = [];
 
     categories.forEach(category => {
+      // Incluir la categoría raíz
+      if (!category.deleted) {
+        allSubcategories.push({
+          ...category,
+          parentCategory: '—',
+          isRoot: true,
+        });
+      }
+      // Incluir sus hijos
       category.subcategorias.forEach(subcategory => {
         if (!subcategory.deleted) {
           allSubcategories.push({
             ...subcategory,
-            parentCategory: category.denominacion
+            parentCategory: category.denominacion,
+            isRoot: false,
           });
         }
       });
@@ -66,30 +76,42 @@ const ProductCategoriesPage: React.FC = () => {
 
   const handleEdit = (id: number) => {
     const found = allSubcategories.find((sub) => sub.id === id);
-    if (found) {
+    if (!found) return;
+
+    if (found.isRoot) {
+      // Es una categoría raíz → abrir CategoryModal
+      const rootCat = categories.find(c => c.id === id);
+      if (rootCat) setEditingCategory(rootCat);
+      setShowCategoryModal(true);
+    } else {
+      // Es una subcategoría → abrir SubcategoryModal
       setEditingSubcategory(found);
       const parent = categories.find((cat) =>
         cat.subcategorias.some((s) => s.id === id)
       );
-      if (parent) {
-        setSelectedParentCategory(parent.id);
-      }
+      if (parent) setSelectedParentCategory(parent.id);
       setShowSubcategoryModal(true);
     }
   };
 
 
   const handleDelete = async (id: number) => {
-  const confirm = window.confirm("¿Estás seguro de que deseas eliminar esta subcategoría?");
-  if (!confirm) return;
+    const found = allSubcategories.find((sub) => sub.id === id);
+    const label = found?.isRoot ? 'categoría' : 'subcategoría';
+    const confirm = window.confirm(`¿Estás seguro de que deseas eliminar esta ${label}?`);
+    if (!confirm) return;
 
-  try {
-    await apiClient.delete(`/categoria/subcategoria/eliminar/${id}`);
-    await fetchCategories();
-  } catch (err) {
-    console.error('Error al eliminar subcategoría:', err);
-  }
-};
+    try {
+      if (found?.isRoot) {
+        await apiClient.delete(`/categoria/eliminar/${id}`);
+      } else {
+        await apiClient.delete(`/categoria/subcategoria/eliminar/${id}`);
+      }
+      await fetchCategories();
+    } catch (err) {
+      console.error(`Error al eliminar ${label}:`, err);
+    }
+  };
 
 
   const handleAddNewSubcategory = () => {
@@ -240,9 +262,15 @@ const ProductCategoriesPage: React.FC = () => {
                       {subcategory.denominacion}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        {subcategory.parentCategory}
-                      </span>
+                      {subcategory.isRoot ? (
+                        <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded-full text-xs font-medium italic">
+                          Categoría raíz
+                        </span>
+                      ) : (
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          {subcategory.parentCategory}
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
