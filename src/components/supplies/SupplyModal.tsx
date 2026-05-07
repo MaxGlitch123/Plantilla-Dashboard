@@ -185,13 +185,10 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
       formData.precioVenta = formData.precioCompra;
     }
 
-    const categoriaId = formData.esParaElaborar
-      ? categories.find(c => c.esInsumo && c.denominacion.toLowerCase() === 'insumos')?.id
-      : formData.categoria?.id;
+    const categoriaId = formData.categoria?.id;
 
     if (!categoriaId) {
-      console.log('Categorías disponibles:', categories);
-      alert('No se encontró la categoría "Insumos".');
+      alert('Seleccioná una categoría para el insumo.');
       return;
     }
 
@@ -276,29 +273,25 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
               />
             </div>
 
-            {!formData.esParaElaborar && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                <select
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
-                  value={formData.categoria?.id || ''}
-                  onChange={(e) => {
-                    const selected = categories.find(cat => cat.id === Number(e.target.value));
-                    setFormData({ ...formData, categoria: selected });
-                  }}
-                  required
-                >
-                  <option value="">Seleccionar categoría</option>
-                  {categories
-                    .filter(c => !c.esInsumo) // solo subcategorías
-                    .map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.denominacion}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            )}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <select
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                value={formData.categoria?.id || ''}
+                onChange={(e) => {
+                  const selected = categories.find(cat => cat.id === Number(e.target.value));
+                  setFormData({ ...formData, categoria: selected });
+                }}
+                required
+              >
+                <option value="">Seleccionar categoría</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.denominacion}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Unidad de medida</label>

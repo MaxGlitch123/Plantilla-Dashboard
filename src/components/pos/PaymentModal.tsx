@@ -4,6 +4,7 @@ import { usePOSStore } from '../../store/posStore';
 import { POSService } from '../../services/posService';
 import { OfflineService } from '../../services/offlineService';
 import { PrinterService } from '../../services/printerService';
+import { validateStockForOrder } from '../../services/stockValidationService';
 import { PaymentDetails, SaleChannel } from '../../types/pos';
 import Button from '../ui/Button';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -16,6 +17,7 @@ export const PaymentModal: React.FC = () => {
   const [customerDocument, setCustomerDocument] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stockWarning, setStockWarning] = useState<string | null>(null);
   
   const isOnline = useOnlineStatus();
   const { 
@@ -57,8 +59,9 @@ export const PaymentModal: React.FC = () => {
 
   const handlePayment = async () => {
     setError(null);
+    setStockWarning(null);
 
-    // Validaciones
+    // Validaciones básicas
     if (cart.length === 0) {
       setError('El carrito está vacío');
       return;
@@ -67,6 +70,29 @@ export const PaymentModal: React.FC = () => {
     if (paymentMethod === 'cash' && receivedAmountNum < total) {
       setError('El monto recibido debe ser mayor o igual al total');
       return;
+    }
+
+    // Validación de stock de insumos
+    if (isOnline) {
+      try {
+        const stockItems = cart.map(item => ({
+          articuloId: parseInt(item.productId),
+          cantidad: item.quantity,
+        }));
+        const { isValid, insufficientStockItems, warning } = await validateStockForOrder(stockItems);
+        if (!isValid && insufficientStockItems.length > 0) {
+          const detalle = insufficientStockItems
+            .map(i => `• ${i.nombre}: necesitás ${i.stockRequerido} ${i.stockRequerido === 1 ? 'unidad' : 'unidades'}, hay ${i.stockActual}`)
+            .join('\n');
+          setError(`Stock insuficiente para completar la venta:\n${detalle}`);
+          return;
+        }
+        if (warning) setStockWarning(warning);
+      } catch {
+        // El backend no responde (Railway caído, DB sin conexión, timeout)
+        // Se permite continuar pero se avisa al cajero
+        setStockWarning('No se pudo verificar el stock (servidor no disponible). La venta se registrará igual.');
+      }
     }
 
     setProcessing(true);
@@ -303,7 +329,15 @@ export const PaymentModal: React.FC = () => {
           {/* Error */}
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">{error}</p>
+              <p className="text-sm text-red-800 whitespace-pre-line">{error}</p>
+            </div>
+          )}
+
+          {/* Advertencia de stock */}
+          {stockWarning && !error && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start space-x-2">
+              <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-yellow-800">{stockWarning}</p>
             </div>
           )}
 

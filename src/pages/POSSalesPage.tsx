@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Calendar, Search, Printer, Eye, Download, XCircle } from 'lucide-react';
+import { Calendar, Search, Printer, Eye, Download, XCircle, TrendingUp, ChevronDown } from 'lucide-react';
 import { POSService } from '../services/posService';
 import { PrinterService } from '../services/printerService';
 import { Sale } from '../types/pos';
@@ -18,6 +18,7 @@ const POSSalesPage: React.FC = () => {
   const [cashierFilter, setCashierFilter] = useState('all');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [voidingSale, setVoidingSale] = useState<Sale | null>(null);
+  const [showRanking, setShowRanking] = useState(false);
 
   // Cargar ventas según filtro de fecha
   const loadSales = useCallback(async () => {
@@ -161,9 +162,50 @@ const POSSalesPage: React.FC = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Código', 'Fecha', 'Hora', 'Cajero', 'Canal', 'Items', 'Método de Pago', 'Total', 'Estado'];
+    const rows = filteredSales.map(sale => {
+      const date = new Date(sale.saleDate);
+      const itemsList = sale.items.map(i => `${i.productName} x${i.quantity}`).join(' | ');
+      return [
+        sale.saleCode,
+        date.toLocaleDateString('es-AR'),
+        date.toLocaleTimeString('es-AR'),
+        sale.employeeName || '',
+        sale.channel === 'pedidosya' ? 'Pedidos Ya' : 'Local',
+        itemsList,
+        getPaymentMethodText(sale.paymentMethod),
+        sale.total.toFixed(2),
+        sale.status === 'VOIDED' ? 'Anulada' : 'Activa',
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.download = `ventas-pos-${dateStr}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const activeSales = filteredSales.filter(s => s.status !== 'VOIDED');
   const totalSales = activeSales.length;
   const totalRevenue = activeSales.reduce((sum, sale) => sum + sale.total, 0);
+
+  const sellerRanking = Array.from(
+    activeSales.reduce((map, sale) => {
+      const name = sale.employeeName || 'Sin cajero';
+      const cur = map.get(name) ?? { name, sales: 0, revenue: 0 };
+      map.set(name, { ...cur, sales: cur.sales + 1, revenue: cur.revenue + sale.total });
+      return map;
+    }, new Map<string, { name: string; sales: number; revenue: number }>()).values()
+  ).sort((a, b) => b.revenue - a.revenue);
 
   return (
     <Layout>
@@ -197,6 +239,57 @@ const POSSalesPage: React.FC = () => {
           <div className="text-gray-600">Ticket promedio</div>
         </div>
       </div>
+
+      {/* Ranking de Vendedores */}
+      {activeSales.length > 0 && (
+        <div className="bg-white rounded-lg shadow">
+          <button
+            className="w-full flex items-center justify-between px-6 py-4 text-left"
+            onClick={() => setShowRanking(v => !v)}
+          >
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-indigo-600" />
+              <span className="font-semibold text-gray-900">Ranking de Vendedores</span>
+              <span className="text-sm text-gray-500">({sellerRanking.length} cajero{sellerRanking.length !== 1 ? 's' : ''})</span>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showRanking ? 'rotate-180' : ''}`} />
+          </button>
+          {showRanking && (
+            <div className="border-t">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase w-8">#</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cajero</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Ventas</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Ticket prom.</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sellerRanking.map((seller, i) => (
+                    <tr key={seller.name} className="hover:bg-gray-50">
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-xs font-bold text-white ${
+                          i === 0 ? 'bg-yellow-400' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-amber-600' : 'bg-gray-300'
+                        }`}>{i + 1}</span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{seller.name}</td>
+                      <td className="px-4 py-3 text-right text-gray-700">{seller.sales}</td>
+                      <td className="px-4 py-3 text-right text-gray-600">
+                        ${(seller.revenue / seller.sales).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-green-600">
+                        ${seller.revenue.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -261,7 +354,7 @@ const POSSalesPage: React.FC = () => {
 
           {/* Acciones */}
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm" className="flex-1">
+            <Button variant="outline" size="sm" className="flex-1" onClick={handleExportCSV} disabled={filteredSales.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>

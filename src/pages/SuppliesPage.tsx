@@ -68,6 +68,10 @@ const SuppliesPage: React.FC = () => {
 
   const [flatCategories, setFlatCategories] = useState<Category[]>([]);
 
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   // useEffect para manejar parámetros URL
   useEffect(() => {
     const filter = searchParams.get('filter');
@@ -287,6 +291,12 @@ const SuppliesPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesCritical;
   });
 
+  const totalPages = Math.ceil(filteredSupplies.length / ITEMS_PER_PAGE);
+  const paginatedSupplies = filteredSupplies.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const handleEdit = (supply: Supply) => {
     setSelectedSupply(supply);
     setIsModalOpen(true);
@@ -435,14 +445,14 @@ const SuppliesPage: React.FC = () => {
               placeholder="Buscar por nombre de insumo"
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
           </div>
           <div className="flex gap-2">
             <select
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
             >
               <option value="">Todas las categorías</option>
               {categoriasUnicas.map(category => (
@@ -459,6 +469,7 @@ const SuppliesPage: React.FC = () => {
                 onClick={() => {
                   setShowCriticalOnly(true);
                   setSearchParams({ filter: 'critical' });
+                  setCurrentPage(1);
                 }}
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
@@ -483,7 +494,7 @@ const SuppliesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSupplies.map((supply) => {
+              {paginatedSupplies.map((supply) => {
                 const stockStatus = getStockStatus(supply);
                 const stockPercentage = supply.stockMaximo ? (supply.stockActual / supply.stockMaximo) * 100 : 0;
                 const isUpdating = updatingStockIds.includes(supply.id);
@@ -585,6 +596,58 @@ const SuppliesPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between w-full">
+              <p className="text-sm text-gray-700">
+                Mostrando{' '}
+                <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>{' '}a{' '}
+                <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredSupplies.length)}</span>{' '}
+                de <span className="font-medium">{filteredSupplies.length}</span> resultados
+              </p>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >&laquo;</button>
+                {(() => {
+                  const delta = 2;
+                  const pages: (number | '...')[] = [];
+                  const left = Math.max(2, currentPage - delta);
+                  const right = Math.min(totalPages - 1, currentPage + delta);
+                  pages.push(1);
+                  if (left > 2) pages.push('...');
+                  for (let i = left; i <= right; i++) pages.push(i);
+                  if (right < totalPages - 1) pages.push('...');
+                  if (totalPages > 1) pages.push(totalPages);
+                  return pages.map((page, idx) =>
+                    page === '...' ? (
+                      <span key={`e-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-400 select-none">…</span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page as number)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          page === currentPage
+                            ? 'bg-amber-50 border-amber-500 text-amber-600'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >{page}</button>
+                    )
+                  );
+                })()}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >&raquo;</button>
+              </nav>
+            </div>
+          </div>
+        )}
       </div>
 
       <SupplyModal

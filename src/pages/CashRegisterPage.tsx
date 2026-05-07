@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/layout/Layout';
-import { Clock, CreditCard, Banknote, ArrowRightLeft, TrendingUp, AlertCircle, CheckCircle, History, Play, Square, Search, Printer, CalendarDays } from 'lucide-react';
+import { Clock, CreditCard, Banknote, ArrowRightLeft, TrendingUp, AlertCircle, CheckCircle, History, Play, Square, Search, Printer, CalendarDays, Users } from 'lucide-react';
 import { POSService } from '../services/posService';
 import apiClient from '../api/apiClient';
 
@@ -33,10 +33,12 @@ const CashRegisterPage: React.FC = () => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showHistoryDetail, setShowHistoryDetail] = useState<Shift | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<'current' | 'history'>('current');
+  const [tab, setTab] = useState<'current' | 'history' | 'consolidated'>('current');
   const [toast, setToast] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState('');
   const [historyDateFilter, setHistoryDateFilter] = useState('');
+  const [historyTimeFrom, setHistoryTimeFrom] = useState('');
+  const [historyTimeTo, setHistoryTimeTo] = useState('');
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -158,8 +160,21 @@ const CashRegisterPage: React.FC = () => {
       s.employeeName.toLowerCase().includes(historySearch.toLowerCase());
     const matchesDate = !historyDateFilter ||
       new Date(s.startTime).toISOString().slice(0, 10) === historyDateFilter;
-    return matchesSearch && matchesDate;
+    let matchesTime = true;
+    if (historyTimeFrom || historyTimeTo) {
+      const getHHMM = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      };
+      const startHHMM = getHHMM(s.startTime);
+      const endHHMM = s.endTime ? getHHMM(s.endTime) : '23:59';
+      if (historyTimeFrom) matchesTime = matchesTime && endHHMM >= historyTimeFrom;
+      if (historyTimeTo) matchesTime = matchesTime && startHHMM <= historyTimeTo;
+    }
+    return matchesSearch && matchesDate && matchesTime;
   });
+
+  const activeShifts = shiftHistory.filter(s => s.status === 'ACTIVE');
 
   const handlePrintShift = (shift: Shift) => {
     const w = window.open('', '_blank', 'width=400,height=600');
@@ -237,6 +252,14 @@ const CashRegisterPage: React.FC = () => {
               }`}
             >
               <History className="inline h-4 w-4 mr-1" /> Historial
+            </button>
+            <button
+              onClick={() => setTab('consolidated')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                tab === 'consolidated' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Users className="inline h-4 w-4 mr-1" /> Consolidado
             </button>
           </div>
         </div>
@@ -413,9 +436,27 @@ const CashRegisterPage: React.FC = () => {
                     className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                {(historySearch || historyDateFilter) && (
+                <div className="relative" title="Hora desde">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="time"
+                    value={historyTimeFrom}
+                    onChange={(e) => setHistoryTimeFrom(e.target.value)}
+                    className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div className="relative" title="Hora hasta">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="time"
+                    value={historyTimeTo}
+                    onChange={(e) => setHistoryTimeTo(e.target.value)}
+                    className="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                {(historySearch || historyDateFilter || historyTimeFrom || historyTimeTo) && (
                   <button
-                    onClick={() => { setHistorySearch(''); setHistoryDateFilter(''); }}
+                    onClick={() => { setHistorySearch(''); setHistoryDateFilter(''); setHistoryTimeFrom(''); setHistoryTimeTo(''); }}
                     className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
                   >
                     Limpiar
@@ -476,6 +517,80 @@ const CashRegisterPage: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'consolidated' && (
+          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold">Cajeros Activos</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Vista consolidada de todos los turnos abiertos ahora</p>
+            </div>
+            {activeShifts.length === 0 ? (
+              <div className="p-8 text-center text-gray-400">
+                No hay cajeros con turno abierto en este momento.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cajero</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Desde</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo activo</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">N° ventas</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Efectivo</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tarjeta</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Transf.</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {activeShifts.map((shift) => (
+                      <tr key={shift.id} className={shift.id === activeShift?.id ? 'bg-green-50' : 'hover:bg-gray-50'}>
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {shift.employeeName}
+                          {shift.id === activeShift?.id && (
+                            <span className="ml-2 text-xs text-green-600 font-normal">(vos)</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{formatTime(shift.startTime)}</td>
+                        <td className="px-4 py-3 text-gray-600">{getElapsedTime(shift.startTime)}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">{shift.salesCount}</td>
+                        <td className="px-4 py-3 text-right text-green-700">{formatCurrency(shift.cashSales)}</td>
+                        <td className="px-4 py-3 text-right text-purple-700">{formatCurrency(shift.cardSales)}</td>
+                        <td className="px-4 py-3 text-right text-orange-700">{formatCurrency(shift.transferSales)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-gray-900">{formatCurrency(shift.totalSales)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {activeShifts.length > 1 && (
+                    <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                      <tr>
+                        <td className="px-4 py-3 font-bold text-gray-800" colSpan={3}>
+                          Total ({activeShifts.length} cajeros)
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-gray-800">
+                          {activeShifts.reduce((s, x) => s + x.salesCount, 0)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-green-700">
+                          {formatCurrency(activeShifts.reduce((s, x) => s + x.cashSales, 0))}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-purple-700">
+                          {formatCurrency(activeShifts.reduce((s, x) => s + x.cardSales, 0))}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-orange-700">
+                          {formatCurrency(activeShifts.reduce((s, x) => s + x.transferSales, 0))}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-gray-900">
+                          {formatCurrency(activeShifts.reduce((s, x) => s + x.totalSales, 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
               </div>
             )}
           </div>
