@@ -55,8 +55,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     const loadSupplies = async () => {
       try {
         const data = await fetchSupplies();
-        const filtered = data.filter((s) => s.esParaElaborar === true);
-        setSupplies(filtered);
+        setSupplies(data);
       } catch (error) {
         console.error('Error al cargar insumos:', error);
       }
