@@ -13,20 +13,7 @@ export const fetchSupplies = async (): Promise<Supply[]> => {
     if (response.data && Array.isArray(response.data)) {
       console.log(`✅ Se obtuvieron ${response.data.length} insumos totales`);
       
-      // Filtrar solo los insumos que realmente son para elaborar productos
-      const insumos = response.data.filter((item: any) => {
-        // Filtrar por propiedad esParaElaborar o por categoría de insumo
-        const esParaElaborar = item.esParaElaborar === true ||
-                              item.categoria?.esInsumo === true;
-        
-        if (esParaElaborar) {
-          console.log(`✅ Insumo válido: ${item.denominacion} (ID: ${item.id}) - Stock: ${item.stockActual}`);
-        }
-        
-        return esParaElaborar;
-      });
-      
-      console.log(`📊 Total de insumos válidos para elaboración: ${insumos.length}`);
+      const insumos: Supply[] = response.data;
       
       // Para debug: mostrar todos los insumos encontrados
       insumos.forEach(insumo => {
