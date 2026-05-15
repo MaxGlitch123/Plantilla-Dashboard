@@ -64,12 +64,6 @@ const SIDEBAR_ITEMS = [
     allowedRoles: ['cajero'],
   },
   {
-    label: 'Órdenes Web',
-    icon: <Globe size={20} />,
-    path: '/orders',
-    allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'chef'],
-  },
-  {
     label: 'Productos',
     icon: <ShoppingBag size={20} />,
     path: '/products',

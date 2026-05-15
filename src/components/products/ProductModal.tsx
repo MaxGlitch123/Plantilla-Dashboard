@@ -41,6 +41,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
     imagenes: [],
   });
   const [supplies, setSupplies] = useState<Supply[]>([]);
+  const [supplySearch, setSupplySearch] = useState<string[]>([]);
+  const [supplyDropdownOpen, setSupplyDropdownOpen] = useState<boolean[]>([]);
 
   // Estado para manejar la imagen
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -90,6 +92,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
           categoriaId: categoriaValida ? product.categoria.id : '',
           categoria: categoriaValida ? product.categoria : undefined,
         });
+        // Initialize search labels for existing ingredients
+        const labels = (initialData.detalles || []).map(d => {
+          const s = d.item as Supply;
+          return s ? `${s.denominacion} (${getUnidadLabel(s.unidadMedida)}) - stock: ${s.stockActual}` : '';
+        });
+        setSupplySearch(labels);
+        setSupplyDropdownOpen(labels.map(() => false));
       } else {
         setFormData({
           denominacion: '',
@@ -101,6 +110,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           detalles: [],
           imagenes: [],
         });
+        setSupplySearch([]);
+        setSupplyDropdownOpen([]);
       }
       setImageFile(null);
     };
@@ -580,6 +591,8 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
       ...prev,
       detalles: [...(prev.detalles || []), newDetail],
     }));
+    setSupplySearch((prev) => [...prev, '']);
+    setSupplyDropdownOpen((prev) => [...prev, false]);
   };
 
 
@@ -587,6 +600,8 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
     const newDetalles = [...(formData.detalles || [])];
     newDetalles.splice(index, 1);
     setFormData((prev) => ({ ...prev, detalles: newDetalles }));
+    setSupplySearch((prev) => prev.filter((_, i) => i !== index));
+    setSupplyDropdownOpen((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
@@ -898,41 +913,92 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
             ) : (
               (formData.detalles || []).map((detalle, index) => (
                 <div key={index} className="flex items-center gap-2 mb-2">
-                  <select
-                    className="flex-1 p-2 border rounded-md"
-                    value={(detalle.item as Supply).id}
-                    onChange={(e) => {
-                      const selectedId = parseInt(e.target.value);
-                      const selected = supplies.find((s) => s.id === selectedId);
-                      
-                      if (selected) {
-                        // Crear una copia completa del insumo seleccionado para mantener toda la estructura
-                        const completeSuppyObj = {
-                          ...selected,
-                          // Asegurar que unidadMedida tenga la estructura correcta
-                          unidadMedida: typeof selected.unidadMedida === 'object' 
-                            ? selected.unidadMedida 
-                            : { id: 1, denominacion: selected.unidadMedida },
-                          // Asegurar que la categoría tenga la estructura correcta para Supply
-                          categoria: selected.categoria ? {
-                            id: Number(selected.categoria.id), // Mantener como número para Supply
-                            denominacion: selected.categoria.denominacion,
-                            esInsumo: selected.categoria.esInsumo || true, // Asegurar que tenga el campo esInsumo
-                            deleted: selected.categoria.deleted
-                          } : null
-                        };
-                        
-                        // Actualizar con el objeto completo
-                        updateIngredient(index, 'supply', completeSuppyObj);
+                  {/* Searchable supply combobox */}
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-md text-sm"
+                      placeholder="Buscar insumo..."
+                      value={supplySearch[index] !== undefined
+                        ? supplySearch[index]
+                        : (() => { const s = detalle.item as Supply; return s ? `${s.denominacion} (${getUnidadLabel(s.unidadMedida)}) - stock: ${s.stockActual}` : ''; })()
                       }
-                    }}
-                  >
-                    {supplies.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.denominacion} ({getUnidadLabel(s.unidadMedida)}) - stock: {s.stockActual}
-                      </option>
-                    ))}
-                  </select>
+                      onFocus={() => {
+                        const open = [...supplyDropdownOpen];
+                        open[index] = true;
+                        setSupplyDropdownOpen(open);
+                        if (!supplySearch[index]) {
+                          const updated = [...supplySearch];
+                          updated[index] = '';
+                          setSupplySearch(updated);
+                        }
+                      }}
+                      onChange={(e) => {
+                        const updated = [...supplySearch];
+                        updated[index] = e.target.value;
+                        setSupplySearch(updated);
+                        const open = [...supplyDropdownOpen];
+                        open[index] = true;
+                        setSupplyDropdownOpen(open);
+                      }}
+                      onBlur={() => {
+                        // Delay to allow click on option
+                        setTimeout(() => {
+                          const open = [...supplyDropdownOpen];
+                          open[index] = false;
+                          setSupplyDropdownOpen(open);
+                          // Reset search text to selected supply name
+                          const s = detalle.item as Supply;
+                          const updated = [...supplySearch];
+                          updated[index] = s ? `${s.denominacion} (${getUnidadLabel(s.unidadMedida)}) - stock: ${s.stockActual}` : '';
+                          setSupplySearch(updated);
+                        }, 150);
+                      }}
+                    />
+                    {supplyDropdownOpen[index] && (
+                      <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto mt-1">
+                        {supplies
+                          .filter(s => {
+                            const q = (supplySearch[index] || '').toLowerCase();
+                            return s.denominacion.toLowerCase().includes(q);
+                          })
+                          .map(s => (
+                            <li
+                              key={s.id}
+                              className="px-3 py-2 text-sm cursor-pointer hover:bg-amber-50 hover:text-amber-700"
+                              onMouseDown={() => {
+                                const completeSuppyObj = {
+                                  ...s,
+                                  unidadMedida: typeof s.unidadMedida === 'object'
+                                    ? s.unidadMedida
+                                    : { id: 1, denominacion: s.unidadMedida },
+                                  categoria: s.categoria ? {
+                                    id: Number(s.categoria.id),
+                                    denominacion: s.categoria.denominacion,
+                                    esInsumo: s.categoria.esInsumo || true,
+                                    deleted: s.categoria.deleted
+                                  } : null
+                                };
+                                updateIngredient(index, 'supply', completeSuppyObj);
+                                const updated = [...supplySearch];
+                                updated[index] = `${s.denominacion} (${getUnidadLabel(s.unidadMedida)}) - stock: ${s.stockActual}`;
+                                setSupplySearch(updated);
+                                const open = [...supplyDropdownOpen];
+                                open[index] = false;
+                                setSupplyDropdownOpen(open);
+                              }}
+                            >
+                              <span className="font-medium">{s.denominacion}</span>
+                              <span className="text-gray-400 ml-1">({getUnidadLabel(s.unidadMedida)}) — stock: {s.stockActual}</span>
+                            </li>
+                          ))
+                        }
+                        {supplies.filter(s => s.denominacion.toLowerCase().includes((supplySearch[index] || '').toLowerCase())).length === 0 && (
+                          <li className="px-3 py-2 text-sm text-gray-400 italic">Sin resultados</li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
 
                   <input
                     type="number"

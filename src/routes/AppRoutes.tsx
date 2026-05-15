@@ -9,7 +9,6 @@ import DashboardPage from '../pages/DashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import CustomersPage from '../pages/CustomersPage';
 import EmployeesPage from '../pages/EmployeesPage';
-import WebOrdersPage from '../pages/WebOrdersPage'; // Renombrado de OrdersPage
 import DeliveryPage from '../pages/DeliveryPage';
 import ReportsPage from '../pages/ReportsPage';
 import SettingsPage from '../pages/SettingsPage';
@@ -230,18 +229,7 @@ const AppRoutes: React.FC = () => {
           } 
         />
         
-        <Route 
-          path="/orders" 
-          element={
-            <ProtectedRoute 
-              allowedRoles={ALL_ROLES}
-              enableAdvancedGuard={true}
-              validationInterval={0} // Disabled
-            >
-              <WebOrdersPage />
-            </ProtectedRoute>
-          } 
-        />
+
 
         {/* Rutas del POS */}
         <Route 
