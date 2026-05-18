@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
   LayoutDashboard,
-  Users,
   UserCircle,
   ShoppingBag,
   Coffee,
@@ -13,7 +12,6 @@ import {
   Tag,
   ShoppingCart,
   Receipt,
-  Globe,
   ChefHat,
   Wallet,
   BarChart2
@@ -28,9 +26,9 @@ const SIDEBAR_ITEMS = [
     allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'cajero'],
   },
   {
-    label: 'Clientes',
-    icon: <Users size={20} />,
-    path: '/customers',
+    label: 'Ventas POS',
+    icon: <Receipt size={20} />,
+    path: '/pos/sales',
     allowedRoles: ['admin', 'manager', 'employee'],
   },
   {

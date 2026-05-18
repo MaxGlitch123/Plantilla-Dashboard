@@ -13,6 +13,8 @@ const POSSalesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cashierFilter, setCashierFilter] = useState('all');
@@ -30,6 +32,12 @@ const POSSalesPage: React.FC = () => {
 
       if (dateFilter === 'today') {
         salesData = await POSService.getTodaySales();
+      } else if (dateFilter === 'custom') {
+        if (customFrom && customTo) {
+          salesData = await POSService.getSalesByDateRange(customFrom, customTo);
+        } else {
+          salesData = [];
+        }
       } else {
         let from: string;
         if (dateFilter === 'this-week') {
@@ -49,7 +57,7 @@ const POSSalesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter]);
+  }, [dateFilter, customFrom, customTo]);
 
   useEffect(() => {
     loadSales();
@@ -315,7 +323,25 @@ const POSSalesPage: React.FC = () => {
             <option value="today">Hoy</option>
             <option value="this-week">Esta semana</option>
             <option value="this-month">Este mes</option>
+            <option value="custom">Rango personalizado</option>
           </select>
+          {dateFilter === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={e => setCustomFrom(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-500 self-center">—</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={e => setCustomTo(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              />
+            </>
+          )}
 
           {/* Filtro por cajero */}
           <select

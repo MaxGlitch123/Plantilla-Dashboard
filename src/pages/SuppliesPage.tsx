@@ -4,7 +4,7 @@ import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { Search, Plus, Edit, Trash2, AlertTriangle, RefreshCw, Wifi, WifiOff, DollarSign, X } from 'lucide-react'; //ListFilter,
+import { Search, Plus, Edit, Trash2, AlertTriangle, RefreshCw, Wifi, WifiOff, DollarSign, X, Printer } from 'lucide-react'; //ListFilter,
 /* import { Link } from 'react-router-dom'; */
 import type { Supply } from '../types/supply';
 import SupplyModal from '../components/supplies/SupplyModal';
@@ -257,6 +257,48 @@ const SuppliesPage: React.FC = () => {
     }
   };
 
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const getUnidad = (u: any) => typeof u === 'object' ? (u?.denominacion ?? '—') : (u ?? '—');
+    const rows = filteredSupplies.map(s => `
+      <tr>
+        <td>${s.denominacion}</td>
+        <td>${s.categoria?.denominacion ?? '—'}</td>
+        <td>${getUnidad(s.unidadMedida)}</td>
+        <td>${s.stockActual} / ${s.stockMaximo ?? '—'}</td>
+        <td>${s.stockMinimo ?? 0}</td>
+        <td>$${Number(s.precioCompra ?? 0).toFixed(2)}</td>
+        <td></td>
+      </tr>`).join('');
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Lista de Insumos</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; margin: 24px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        p { color: #555; margin-bottom: 16px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #d1d5db; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .notes-col { width: 120px; }
+        @media print { body { margin: 0; } }
+      </style></head><body>
+      <h1>Lista de Insumos — City Fast</h1>
+      <p>Generado: ${new Date().toLocaleString('es-AR')} · Total: ${filteredSupplies.length} insumos</p>
+      <table>
+        <thead><tr>
+          <th>Insumo</th><th>Categoría</th><th>Unidad</th>
+          <th>Stock actual / máx.</th><th>Stock mín.</th><th>Precio compra</th>
+          <th class="notes-col">Notas</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`);
+    printWindow.document.close();
+  };
+
   const fetchCategories = async () => {
     try {
       const res = await apiClient.get('/categoria/listar');
@@ -425,6 +467,9 @@ const SuppliesPage: React.FC = () => {
             disabled={loading}
           >
             Actualizar Stock
+          </Button>
+          <Button variant="outline" icon={<Printer size={18} />} onClick={handlePrint} disabled={filteredSupplies.length === 0}>
+            Imprimir PDF
           </Button>
           {/* <Link to="/supplies/categories">
             <Button variant="outline" icon={<ListFilter size={18} />}>Categorías</Button>

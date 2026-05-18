@@ -17,7 +17,7 @@ export const fetchSupplies = async (): Promise<Supply[]> => {
       
       // Para debug: mostrar todos los insumos encontrados
       insumos.forEach(insumo => {
-        console.log(`- ${insumo.denominacion} (ID: ${insumo.id}) - Stock: ${insumo.stockActual} - ${insumo.unidadMedida?.denominacion || insumo.unidadMedida}`);
+        console.log(`- ${insumo.denominacion} (ID: ${insumo.id}) - Stock: ${insumo.stockActual} - ${typeof insumo.unidadMedida === 'object' ? insumo.unidadMedida?.denominacion : insumo.unidadMedida}`);
       });
       
       return insumos;

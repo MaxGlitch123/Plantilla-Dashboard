@@ -3,7 +3,7 @@ import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { Search, Plus, Edit, Trash2, ListFilter, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ListFilter, RefreshCw, AlertTriangle, Printer } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { MenuItem } from '../types/menuItem';
 import ProductModal from '../components/products/ProductModal';
@@ -117,6 +117,44 @@ const ProductsPage: React.FC = () => {
     const matchesCategory = !selectedCategory || product.categoria?.denominacion === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const rows = filteredProducts.map(p => `
+      <tr>
+        <td>${p.denominacion}</td>
+        <td>${p.categoria?.denominacion ?? '—'}</td>
+        <td>$${Number(p.precioVenta ?? 0).toFixed(2)}</td>
+        <td>${p.tiempoEstimadoMinutos ?? 0} min</td>
+        <td>${p.deleted ? 'Inactivo' : 'Activo'}</td>
+        <td></td>
+      </tr>`).join('');
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Lista de Productos</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; margin: 24px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        p { color: #555; margin-bottom: 16px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #d1d5db; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        @media print { body { margin: 0; } }
+      </style></head><body>
+      <h1>Lista de Productos — City Fast</h1>
+      <p>Generado: ${new Date().toLocaleString('es-AR')} · Total: ${filteredProducts.length} productos</p>
+      <table>
+        <thead><tr>
+          <th>Producto</th><th>Categoría</th><th>Precio</th>
+          <th>Tiempo prep.</th><th>Estado</th><th>Notas</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`);
+    printWindow.document.close();
+  };
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
@@ -294,6 +332,9 @@ const ProductsPage: React.FC = () => {
               Categorías
             </Button>
           </Link>
+          <Button variant="outline" icon={<Printer size={18} />} onClick={handlePrint} disabled={filteredProducts.length === 0}>
+            Imprimir PDF
+          </Button>
           <Button
             variant="primary"
             icon={<Plus size={18} />}

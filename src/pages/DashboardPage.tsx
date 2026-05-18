@@ -97,9 +97,10 @@ const DashboardPage = () => {
         console.log('🛒 Obteniendo estadísticas del POS...');
         try {
           const sales = await POSService.getTodaySales();
-          setTodaySales(sales.length);
-          setTodayRevenue(sales.reduce((sum, sale) => sum + sale.total, 0));
-          console.log('✅ Estadísticas POS cargadas:', { ventas: sales.length, ingresos: sales.reduce((sum, sale) => sum + sale.total, 0) });
+          const activeSales = sales.filter(s => s.status !== 'VOIDED' && s.status !== 'ANULADA');
+          setTodaySales(activeSales.length);
+          setTodayRevenue(activeSales.reduce((sum, sale) => sum + sale.total, 0));
+          console.log('✅ Estadísticas POS cargadas:', { ventas: activeSales.length, ingresos: activeSales.reduce((sum, sale) => sum + sale.total, 0) });
         } catch (error) {
           console.error('⚠️ Error cargando estadísticas POS:', error);
         }
