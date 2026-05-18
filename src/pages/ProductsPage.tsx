@@ -121,35 +121,55 @@ const ProductsPage: React.FC = () => {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    const rows = filteredProducts.map(p => `
-      <tr>
-        <td>${p.denominacion}</td>
-        <td>${p.categoria?.denominacion ?? '—'}</td>
-        <td>$${Number(p.precioVenta ?? 0).toFixed(2)}</td>
-        <td>${p.tiempoEstimadoMinutos ?? 0} min</td>
-        <td>${p.deleted ? 'Inactivo' : 'Activo'}</td>
-        <td></td>
-      </tr>`).join('');
+
+    // Group products by category
+    const grouped: Record<string, typeof filteredProducts> = {};
+    for (const p of filteredProducts) {
+      const cat = p.categoria?.denominacion ?? 'Sin categoría';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    }
+
+    const sections = Object.entries(grouped).map(([cat, items]) => {
+      const itemRows = items.map(p => `
+        <tr>
+          <td>${p.denominacion}</td>
+          <td class="col-price">$${Number(p.precioVenta ?? 0).toFixed(2)}</td>
+          <td class="col-price"></td>
+          <td class="col-notes"></td>
+        </tr>`).join('');
+      return `
+        <tr class="category-row">
+          <td colspan="4">Rubro: ${cat}</td>
+        </tr>
+        ${itemRows}`;
+    }).join('');
+
     printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Lista de Productos</title>
+      <title>Lista de Precios</title>
       <style>
-        body { font-family: Arial, sans-serif; font-size: 13px; margin: 24px; }
-        h1 { font-size: 18px; margin-bottom: 4px; }
-        p { color: #555; margin-bottom: 16px; font-size: 12px; }
+        body { font-family: Arial, sans-serif; font-size: 12px; margin: 24px; }
+        h1 { font-size: 22px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+        .subtitle { text-align: center; color: #555; font-size: 11px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #d1d5db; }
-        td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-        tr:nth-child(even) td { background: #fafafa; }
-        @media print { body { margin: 0; } }
+        th { background: #e5e7eb; text-align: left; padding: 6px 10px; font-size: 11px; text-transform: uppercase; border: 1px solid #d1d5db; }
+        td { padding: 6px 10px; border: 1px solid #e5e7eb; }
+        .category-row td { background: #1f2937; color: #fff; font-weight: bold; font-size: 12px; padding: 5px 10px; }
+        .col-price { width: 120px; text-align: right; }
+        .col-notes { width: 160px; }
+        tr:nth-child(even) td:not(.category-row td) { background: #f9fafb; }
+        @media print { body { margin: 8px; } }
       </style></head><body>
-      <h1>Lista de Productos — City Fast</h1>
-      <p>Generado: ${new Date().toLocaleString('es-AR')} · Total: ${filteredProducts.length} productos</p>
+      <h1>Lista de Precios</h1>
+      <p class="subtitle">Generado: ${new Date().toLocaleString('es-AR')} · Total: ${filteredProducts.length} productos</p>
       <table>
         <thead><tr>
-          <th>Producto</th><th>Categoría</th><th>Precio</th>
-          <th>Tiempo prep.</th><th>Estado</th><th>Notas</th>
+          <th>Descripción</th>
+          <th class="col-price">Precio local</th>
+          <th class="col-price">Precio PedidosYa</th>
+          <th class="col-notes">Notas</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${sections}</tbody>
       </table>
       <script>window.onload = () => { window.print(); }<\/script>
     </body></html>`);
