@@ -28,6 +28,7 @@ const PromotionsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedUbicacion, setSelectedUbicacion] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | undefined>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
@@ -128,7 +129,8 @@ const PromotionsPage: React.FC = () => {
     const matchesSearch = promotion.denominacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (promotion.descripcionDescuento || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !selectedType || promotion.tipoPromocion === selectedType;
-    return matchesSearch && matchesType && !promotion.eliminado;
+    const matchesUbicacion = !selectedUbicacion || promotion.ubicacion === selectedUbicacion || promotion.ubicacion === 'AMBOS' || !promotion.ubicacion;
+    return matchesSearch && matchesType && matchesUbicacion && !promotion.eliminado;
   });
 
   if (loading) {
@@ -183,6 +185,15 @@ const PromotionsPage: React.FC = () => {
             <option value="PROMOCION_1">Promoción</option>
             <option value="DESCUENTO_ESPECIAL">Descuento Especial</option>
             <option value="OFERTA_LIMITADA">Oferta Limitada</option>
+          </select>
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            value={selectedUbicacion}
+            onChange={(e) => setSelectedUbicacion(e.target.value)}
+          >
+            <option value="">Todas las sucursales</option>
+            <option value="CITYFAST">City Fast (Libertad)</option>
+            <option value="ESQUINAFAST">Esquina Fast</option>
           </select>
         </div>
       </Card>

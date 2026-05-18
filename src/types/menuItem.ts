@@ -30,4 +30,6 @@ export interface MenuItem {
   preparationTime?: number;
   availability?: boolean;
   status?: 'active' | 'inactive';
+  deleted?: boolean;
+  ubicacion?: 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS';
 }

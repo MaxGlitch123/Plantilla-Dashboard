@@ -94,6 +94,7 @@ export interface Promotion {
   prioridad: number;
   eliminado: boolean;
   fechaModificacion: string;
+  ubicacion?: 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS';
   // Relaciones
   promoDetalles: PromoDetalle[];
   imagenes: PromoImagen[];

@@ -203,6 +203,7 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
       stockMinimo: formData.stockMinimo,
       stockMaximo: formData.stockMaximo,
       esParaElaborar: formData.esParaElaborar,
+      ubicacion: formData.ubicacion ?? 'AMBOS',
     };
 
     try {
@@ -473,6 +474,19 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
             </div>
           )}
 
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sucursal</label>
+            <select
+              value={formData.ubicacion ?? 'AMBOS'}
+              onChange={e => setFormData({ ...formData, ubicacion: e.target.value as 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS' })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="AMBOS">Ambas sucursales</option>
+              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="ESQUINAFAST">Esquina Fast</option>
+            </select>
+          </div>
 
           <div className="mt-6 flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>

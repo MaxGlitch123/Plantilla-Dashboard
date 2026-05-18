@@ -18,4 +18,5 @@ export interface Supply {
   stockPendiente?: number; // Stock pendiente por confirmar/recibir
   esParaElaborar: boolean;
   deleted?: boolean;
+  ubicacion?: 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS';
 }

@@ -36,6 +36,7 @@ interface FormData {
   prioridad: number;
   articulosIncluidos: { id: number; denominacion?: string }[];
   categoriasIncluidas: { id: number; denominacion?: string }[];
+  ubicacion: 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS';
 }
 
 interface PromotionModalProps {
@@ -65,6 +66,7 @@ const emptyForm: FormData = {
   prioridad: 1,
   articulosIncluidos: [],
   categoriasIncluidas: [],
+  ubicacion: 'AMBOS',
 };
 
 const TIPO_LABELS: Record<TipoPromocion, { label: string; desc: string }> = {
@@ -138,6 +140,7 @@ export default function PromotionModal({ isOpen, onClose, promotion, mode, onSuc
         prioridad: promotion.prioridad ?? 1,
         articulosIncluidos: promotion.articulosIncluidos || [],
         categoriasIncluidas: promotion.categoriasIncluidas || [],
+        ubicacion: (promotion.ubicacion as 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS') ?? 'AMBOS',
       });
     } else {
       setForm(emptyForm);
@@ -467,6 +470,19 @@ export default function PromotionModal({ isOpen, onClose, promotion, mode, onSuc
                     <span className="ml-3 text-sm font-medium text-gray-700">Promoción activa</span>
                   </label>
                 </div>
+              </div>
+              {/* Sucursal */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sucursal</label>
+                <select
+                  value={form.ubicacion}
+                  onChange={e => update('ubicacion', e.target.value as 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS')}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="AMBOS">Ambas sucursales</option>
+                  <option value="CITYFAST">City Fast (Libertad)</option>
+                  <option value="ESQUINAFAST">Esquina Fast</option>
+                </select>
               </div>
             </>
           )}

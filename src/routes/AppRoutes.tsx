@@ -69,6 +69,7 @@ const AppRoutes: React.FC = () => {
 
   // Usar un selector estable para evitar regeneraciones
   const setToken = useAuthStore(state => state.setToken);
+  const setUbicacion = useAuthStore(state => state.setUbicacion);
   
   // Memoize el tokenGetter para evitar recreaciones innecesarias
   const tokenGetterWrapper = useMemo(() => {
@@ -116,6 +117,25 @@ const AppRoutes: React.FC = () => {
       setAuth0UserName(user.name);
     }
   }, [isAuthenticated, user?.name]);
+
+  // Fetch employee location after login and store in auth store
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchLocation = async () => {
+      try {
+        const { default: apiClient } = await import('../api/apiClient');
+        const res = await apiClient.get('/Empleados/me');
+        const ubicacion = res.data?.ubicacion;
+        if (ubicacion === 'CITYFAST' || ubicacion === 'ESQUINAFAST') {
+          setUbicacion(ubicacion);
+        }
+      } catch (e) {
+        // Not a critical error — location stays null
+        console.warn('Could not fetch employee location:', e);
+      }
+    };
+    fetchLocation();
+  }, [isAuthenticated, setUbicacion]);
 
   // ⚠️ Asumimos que los roles están en una claim personalizada, como:
   const audienceKey = import.meta.env.VITE_AUTH0_AUDIENCE?.endsWith('/') 

@@ -108,6 +108,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           preparacion: '',
           detalles: [],
           imagenes: [],
+          ubicacion: 'AMBOS',
         });
         setSupplySearch([]);
         setSupplyDropdownOpen([]);
@@ -706,6 +707,19 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
           />
           <div className="text-xs text-gray-500 mt-1">
             💡 <strong>Límites MercadoPago:</strong> Mínimo $1 - Máximo $999,999 (compatible con pagos online)
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sucursal</label>
+            <select
+              value={formData.ubicacion ?? 'AMBOS'}
+              onChange={e => setFormData({ ...formData, ubicacion: e.target.value as 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS' })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="AMBOS">Ambas sucursales</option>
+              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="ESQUINAFAST">Esquina Fast</option>
+            </select>
           </div>
           
           

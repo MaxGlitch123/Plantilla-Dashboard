@@ -3,6 +3,7 @@ import { Search, Loader2, Package } from 'lucide-react';
 import { POSService } from '../../services/posService';
 import { Product } from '../../types/pos';
 import { usePOSStore } from '../../store/posStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const ProductSearch: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -14,6 +15,16 @@ export const ProductSearch: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   
   const { addToCart, selectProduct } = usePOSStore();
+  const { ubicacion } = useAuthStore();
+
+  // Filter products by employee location
+  const filterByLocation = (items: Product[]): Product[] => {
+    if (!ubicacion) return items;
+    return items.filter(p => {
+      const loc = (p as any).ubicacion;
+      return !loc || loc === 'AMBOS' || loc === ubicacion;
+    });
+  };
 
   // Cargar todos los productos al montar
   useEffect(() => {
@@ -27,12 +38,13 @@ export const ProductSearch: React.FC = () => {
         if (allProductsData.length === 0) {
           console.log('⚠️ No se cargaron productos, forzando productos de muestra...');
           const sampleProducts = POSService.getSampleProducts();
-          console.log(`📋 ${sampleProducts.length} productos de muestra cargados:`, sampleProducts);
-          setAllProducts(sampleProducts);
-          setProducts(sampleProducts.slice(0, 20));
+          const filtered = filterByLocation(sampleProducts);
+          setAllProducts(filtered);
+          setProducts(filtered.slice(0, 20));
         } else {
-          setAllProducts(allProductsData);
-          setProducts(allProductsData.slice(0, 20)); // Mostrar los primeros 20
+          const filtered = filterByLocation(allProductsData);
+          setAllProducts(filtered);
+          setProducts(filtered.slice(0, 20));
         }
       } catch (error) {
         console.error('❌ Error loading products:', error);

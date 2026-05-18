@@ -17,4 +17,5 @@ export interface Employee {
   auth0Id: string;
   roles: Role[];
   deleted: boolean;
+  ubicacion?: 'CITYFAST' | 'ESQUINAFAST';
 }

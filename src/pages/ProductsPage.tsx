@@ -15,6 +15,7 @@ const ProductsPage: React.FC = () => {
   const [categoryOptions, setCategoryOptions] = useState<FlatCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedUbicacion, setSelectedUbicacion] = useState('');
   const [products, setProducts] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -115,7 +116,8 @@ const ProductsPage: React.FC = () => {
     const matchesSearch = product.denominacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.categoria?.denominacion === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesUbicacion = !selectedUbicacion || product.ubicacion === selectedUbicacion || product.ubicacion === 'AMBOS' || !product.ubicacion;
+    return matchesSearch && matchesCategory && matchesUbicacion;
   });
 
   const handlePrint = () => {
@@ -395,6 +397,17 @@ const ProductsPage: React.FC = () => {
                     {category}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="relative">
+              <select
+                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                value={selectedUbicacion}
+                onChange={(e) => setSelectedUbicacion(e.target.value)}
+              >
+                <option value="">Todas las sucursales</option>
+                <option value="CITYFAST">City Fast (Libertad)</option>
+                <option value="ESQUINAFAST">Esquina Fast</option>
               </select>
             </div>
             <button

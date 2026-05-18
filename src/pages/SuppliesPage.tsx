@@ -57,6 +57,7 @@ const SuppliesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedUbicacion, setSelectedUbicacion] = useState('');
   const [supplies, setSupplies] = useState<Supply[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -354,11 +355,12 @@ const SuppliesPage: React.FC = () => {
   const filteredSupplies = supplies.filter(supply => {
     const matchesSearch = supply.denominacion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || supply.categoria?.denominacion === selectedCategory;
+    const matchesUbicacion = !selectedUbicacion || supply.ubicacion === selectedUbicacion || supply.ubicacion === 'AMBOS' || !supply.ubicacion;
     
     // Filtro para insumos críticos
     const matchesCritical = !showCriticalOnly || getStockStatus(supply) === 'critical';
     
-    return matchesSearch && matchesCategory && matchesCritical;
+    return matchesSearch && matchesCategory && matchesCritical && matchesUbicacion;
   });
 
   const totalPages = Math.ceil(filteredSupplies.length / ITEMS_PER_PAGE);
@@ -531,6 +533,16 @@ const SuppliesPage: React.FC = () => {
               {categoriasUnicas.map(category => (
                 <option key={category.id} value={category.denominacion}>{category.denominacion}</option>
               ))}
+            </select>
+
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+              value={selectedUbicacion}
+              onChange={(e) => { setSelectedUbicacion(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="">Todas las sucursales</option>
+              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="ESQUINAFAST">Esquina Fast</option>
             </select>
             
             {/* Botón para filtrar críticos */}

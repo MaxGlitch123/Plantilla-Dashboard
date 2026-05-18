@@ -10,7 +10,8 @@ interface EmployeeFormData {
   userEmail: string;
   nickName: string;
   roles: string[];
-  password: string; // 👈 Nuevo campo
+  password: string;
+  ubicacion: 'CITYFAST' | 'ESQUINAFAST';
 }
 
 interface EmployeeModalProps {
@@ -29,6 +30,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
     nickName: '',
     roles: [],
     password: '',
+    ubicacion: 'CITYFAST',
   });
   const [passwordError, setPasswordError] = useState<string>('');
 
@@ -39,8 +41,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
         lastName: employee.lastName ?? '',
         userEmail: employee.userEmail,
         nickName: employee.nickName,
-        roles: employee.roles.map(r => r.auth0RoleId), // Usar auth0RoleId
-        password: '', // No mostrar la contraseña existente
+        roles: employee.roles.map(r => r.auth0RoleId),
+        password: '',
+        ubicacion: (employee.ubicacion as 'CITYFAST' | 'ESQUINAFAST') ?? 'CITYFAST',
       });
     } else {
       setFormData({
@@ -50,6 +53,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
         nickName: '',
         roles: [],
         password: '',
+        ubicacion: 'CITYFAST',
       });
     }
     setPasswordError('');
@@ -151,6 +155,17 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSave, 
                 </div>
               )}
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sucursal</label>
+            <select
+              value={formData.ubicacion}
+              onChange={e => setFormData({ ...formData, ubicacion: e.target.value as 'CITYFAST' | 'ESQUINAFAST' })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="ESQUINAFAST">Esquina Fast</option>
+            </select>
           </div>
           <Input
             label={employee ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña'}

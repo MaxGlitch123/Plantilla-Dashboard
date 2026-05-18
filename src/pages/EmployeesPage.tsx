@@ -10,7 +10,7 @@ import { fetchEmployees } from '../api/employees';
 import { Link } from 'react-router-dom';
 import EmployeeModal from '../components/employees/EmployeeModal';
 import { fetchRoles } from '../api/roles';
-import { createEmployee, updateEmployee, deleteEmployee } from '../api/employees'; // Debes tener estas funciones en tu api
+import { createEmployee, updateEmployee, deleteEmployee, updateEmployeeUbicacion } from '../api/employees';
 import { Role } from '../types/employee';
 
 
@@ -18,6 +18,7 @@ const EmployeesPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedUbicacion, setSelectedUbicacion] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | undefined>(undefined);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -60,27 +61,29 @@ const EmployeesPage: React.FC = () => {
     lastName: string;
     userEmail: string;
     nickName: string;
-    roles: string[]; // 👈 Array de auth0RoleId
-    password: string; // 👈 Agrega password aquí
+    roles: string[];
+    password: string;
+    ubicacion: 'CITYFAST' | 'ESQUINAFAST';
   }) => {
     try {
       let savedEmployee: Employee;
       if (selectedEmployee && selectedEmployee.id != null) {
-        console.log('Datos enviados a modifyUser:', {
-          id: selectedEmployee.id,
-          ...data,
-          auth0Id: selectedEmployee.auth0Id,
-        });
         savedEmployee = await updateEmployee(selectedEmployee.id, {
           ...data,
           auth0Id: selectedEmployee.auth0Id,
         });
+        // Update ubicacion separately on the Empleado entity
+        await updateEmployeeUbicacion(selectedEmployee.auth0Id, data.ubicacion);
         setEmployees(prev =>
-          prev.map(emp => (emp.id === savedEmployee.id ? savedEmployee : emp))
+          prev.map(emp => (emp.id === savedEmployee.id ? { ...savedEmployee, ubicacion: data.ubicacion } : emp))
         );
       } else {
-        savedEmployee = await createEmployee(data); // 👈 Ahora data incluye password
-        setEmployees(prev => [...prev, savedEmployee]);
+        savedEmployee = await createEmployee(data);
+        // Set ubicacion on the newly created employee
+        if (savedEmployee.auth0Id) {
+          await updateEmployeeUbicacion(savedEmployee.auth0Id, data.ubicacion);
+        }
+        setEmployees(prev => [...prev, { ...savedEmployee, ubicacion: data.ubicacion }]);
       }
       setIsModalOpen(false);
       setSelectedEmployee(undefined);
@@ -116,11 +119,13 @@ const EmployeesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const filteredEmployees = employees.filter(emp =>
-    `${emp.name} ${emp.lastName ?? ''}`.toLowerCase().includes(search.toLowerCase()) ||
-    emp.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-    emp.roles.some(role => role.name.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = `${emp.name} ${emp.lastName ?? ''}`.toLowerCase().includes(search.toLowerCase()) ||
+      emp.userEmail.toLowerCase().includes(search.toLowerCase()) ||
+      emp.roles.some(role => role.name.toLowerCase().includes(search.toLowerCase()));
+    const matchesUbicacion = !selectedUbicacion || emp.ubicacion === selectedUbicacion;
+    return matchesSearch && matchesUbicacion;
+  });
 
   return (
     <Layout>
@@ -154,6 +159,15 @@ const EmployeesPage: React.FC = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            value={selectedUbicacion}
+            onChange={(e) => setSelectedUbicacion(e.target.value)}
+          >
+            <option value="">Todas las sucursales</option>
+            <option value="CITYFAST">City Fast (Libertad)</option>
+            <option value="ESQUINAFAST">Esquina Fast</option>
+          </select>
         </div>
       </Card>
 
@@ -168,6 +182,7 @@ const EmployeesPage: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sucursal</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -194,6 +209,9 @@ const EmployeesPage: React.FC = () => {
                       {emp.roles.map((r) => (
                         <Badge key={r.id} variant="secondary" size="sm" className="mr-1">{r.name}</Badge>
                       ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {emp.ubicacion === 'CITYFAST' ? 'City Fast (Libertad)' : emp.ubicacion === 'ESQUINAFAST' ? 'Esquina Fast' : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

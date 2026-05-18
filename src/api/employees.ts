@@ -61,3 +61,8 @@ export const deleteEmployee = async (auth0Id: string): Promise<void> => {
     data: { auth0Id },
   });
 };
+
+// Actualiza la ubicación de un empleado
+export const updateEmployeeUbicacion = async (auth0Id: string, ubicacion: 'CITYFAST' | 'ESQUINAFAST'): Promise<void> => {
+  await apiClient.put('/Empleados/ubicacion', { auth0Id, ubicacion });
+};
