@@ -43,12 +43,7 @@ const SIDEBAR_ITEMS = [
     path: '/pos',
     allowedRoles: ['cajero'],
   },
-  {
-    label: 'Ventas POS',
-    icon: <Receipt size={20} />,
-    path: '/pos/sales',
-    allowedRoles: ['cajero'],
-  },
+
   {
     label: 'Productos POS',
     icon: <ChefHat size={20} />,

@@ -41,6 +41,7 @@ import { setAuth0UserName } from '../services/posService';
 // Roles
 const ALL_ROLES = ['admin', 'chef', 'delivery', 'cajero'];
 const POS_ROLES = ['cajero']; // Solo cajero opera el POS
+const SALES_ROLES = ['admin', 'manager', 'employee', 'cajero']; // Ventas POS
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -248,7 +249,7 @@ const AppRoutes: React.FC = () => {
           path="/pos/sales" 
           element={
             <ProtectedRoute 
-              allowedRoles={POS_ROLES}
+              allowedRoles={SALES_ROLES}
               enableAdvancedGuard={true}
             >
               <POSSalesPage />
