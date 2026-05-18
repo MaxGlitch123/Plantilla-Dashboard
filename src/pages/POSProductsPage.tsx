@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { Product } from "../types/pos";
 import { POSService } from "../services/posService";
 import { RecipeModal } from "../components/recipes/RecipeModal";
-import { Search, Package, DollarSign, ShoppingCart, BookOpen, Filter } from "lucide-react";
+import { Search, Package, DollarSign, ShoppingCart, Filter } from "lucide-react";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Layout from '../components/layout/Layout';
@@ -227,16 +227,6 @@ export default function POSProductsPage() {
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="pt-4 border-t border-gray-100">
-                    <Button 
-                      onClick={() => openRecipe(product)} 
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center gap-2"
-                    >
-                      <BookOpen className="h-4 w-4" />
-                      Ver Receta
-                    </Button>
-                  </div>
                 </div>
               </Card>
             ))}
