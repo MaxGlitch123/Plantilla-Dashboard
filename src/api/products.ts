@@ -140,6 +140,7 @@ export const createProduct = async (productData: Partial<MenuItem>): Promise<Men
     tiempoEstimadoMinutos: productData.tiempoEstimadoMinutos,
     preparacion: productData.preparacion || '',
     precioVenta: productData.precioVenta,
+    ubicacion: productData.ubicacion ?? 'AMBOS',
     
     // Campos adicionales observados en la respuesta
     tiempoPreparacion: 0,
@@ -374,6 +375,7 @@ export const updateProduct = async (id: number | string, productData: Partial<Me
     precioVenta: Number(productData.precioVenta || 0),
     tiempoEstimadoMinutos: Number(productData.tiempoEstimadoMinutos || 0),
     preparacion: productData.preparacion || '',
+    ubicacion: productData.ubicacion ?? 'AMBOS',
     
     // Categoría en el formato que espera el backend
     categoria: productData.categoria ? {
