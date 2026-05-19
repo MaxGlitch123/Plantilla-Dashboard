@@ -22,13 +22,14 @@ import {
   obtenerTodasPromociones, 
   eliminarPromocion
 } from '../api/promotions';
+import { useAuthStore } from '../store/useAuthStore';
 
 const PromotionsPage: React.FC = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
-  const [selectedUbicacion, setSelectedUbicacion] = useState('');
+  const { promotionsFilter: selectedUbicacion, setPromotionsFilter: setSelectedUbicacion } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | undefined>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
@@ -129,7 +130,7 @@ const PromotionsPage: React.FC = () => {
     const matchesSearch = promotion.denominacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (promotion.descripcionDescuento || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !selectedType || promotion.tipoPromocion === selectedType;
-    const matchesUbicacion = !selectedUbicacion || promotion.ubicacion === selectedUbicacion || promotion.ubicacion === 'AMBOS' || !promotion.ubicacion;
+    const matchesUbicacion = !selectedUbicacion || promotion.ubicacion === selectedUbicacion || promotion.ubicacion === 'AMBOS';
     return matchesSearch && matchesType && matchesUbicacion && !promotion.eliminado;
   });
 
@@ -192,7 +193,7 @@ const PromotionsPage: React.FC = () => {
             onChange={(e) => setSelectedUbicacion(e.target.value)}
           >
             <option value="">Todas las sucursales</option>
-            <option value="CITYFAST">City Fast (Libertad)</option>
+            <option value="CITYFAST">City Fast</option>
             <option value="ESQUINAFAST">Esquina Fast</option>
           </select>
         </div>

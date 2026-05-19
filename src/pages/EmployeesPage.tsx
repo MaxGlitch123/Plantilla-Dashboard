@@ -165,7 +165,7 @@ const EmployeesPage: React.FC = () => {
             onChange={(e) => setSelectedUbicacion(e.target.value)}
           >
             <option value="">Todas las sucursales</option>
-            <option value="CITYFAST">City Fast (Libertad)</option>
+            <option value="CITYFAST">City Fast</option>
             <option value="ESQUINAFAST">Esquina Fast</option>
           </select>
         </div>
@@ -211,7 +211,7 @@ const EmployeesPage: React.FC = () => {
                       ))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {emp.ubicacion === 'CITYFAST' ? 'City Fast (Libertad)' : emp.ubicacion === 'ESQUINAFAST' ? 'Esquina Fast' : '—'}
+                      {emp.ubicacion === 'CITYFAST' ? 'City Fast' : emp.ubicacion === 'ESQUINAFAST' ? 'Esquina Fast' : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

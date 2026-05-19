@@ -10,12 +10,13 @@ import ProductModal from '../components/products/ProductModal';
 import { fetchCategories, FlatCategory } from '../api/categories';
 import { uploadProductImage } from '../api/images';
 import { fetchAllProducts, createProduct, updateProduct, deleteProduct, fetchProductById } from '../api/products';
+import { useAuthStore } from '../store/useAuthStore';
 
 const ProductsPage: React.FC = () => {
   const [categoryOptions, setCategoryOptions] = useState<FlatCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedUbicacion, setSelectedUbicacion] = useState('');
+  const { productsFilter: selectedUbicacion, setProductsFilter: setSelectedUbicacion } = useAuthStore();
   const [products, setProducts] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,7 +117,7 @@ const ProductsPage: React.FC = () => {
     const matchesSearch = product.denominacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.categoria?.denominacion === selectedCategory;
-    const matchesUbicacion = !selectedUbicacion || product.ubicacion === selectedUbicacion || product.ubicacion === 'AMBOS' || !product.ubicacion;
+    const matchesUbicacion = !selectedUbicacion || product.ubicacion === selectedUbicacion || product.ubicacion === 'AMBOS';
     return matchesSearch && matchesCategory && matchesUbicacion;
   });
 
@@ -406,7 +407,7 @@ const ProductsPage: React.FC = () => {
                 onChange={(e) => setSelectedUbicacion(e.target.value)}
               >
                 <option value="">Todas las sucursales</option>
-                <option value="CITYFAST">City Fast (Libertad)</option>
+                <option value="CITYFAST">City Fast</option>
                 <option value="ESQUINAFAST">Esquina Fast</option>
               </select>
             </div>

@@ -483,7 +483,7 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
             >
               <option value="AMBOS">Ambas sucursales</option>
-              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="CITYFAST">City Fast</option>
               <option value="ESQUINAFAST">Esquina Fast</option>
             </select>
           </div>

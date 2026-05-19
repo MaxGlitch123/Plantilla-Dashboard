@@ -12,6 +12,7 @@ import PriceUpdateModal from '../components/supplies/PriceUpdateModal';
 import apiClient from '../api/apiClient';
 import { connectToPedidoSocket, WebSocketConnectionState, StockUpdate as WebSocketStockUpdate } from '../utils/pedidoWebSocket';
 import { useSupplyStore } from '../store/useSupplyStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface Category {
   id: number;
@@ -57,7 +58,7 @@ const SuppliesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedUbicacion, setSelectedUbicacion] = useState('');
+  const { suppliesFilter: selectedUbicacion, setSuppliesFilter: setSelectedUbicacion } = useAuthStore();
   const [supplies, setSupplies] = useState<Supply[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -355,7 +356,7 @@ const SuppliesPage: React.FC = () => {
   const filteredSupplies = supplies.filter(supply => {
     const matchesSearch = supply.denominacion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || supply.categoria?.denominacion === selectedCategory;
-    const matchesUbicacion = !selectedUbicacion || supply.ubicacion === selectedUbicacion || supply.ubicacion === 'AMBOS' || !supply.ubicacion;
+    const matchesUbicacion = !selectedUbicacion || supply.ubicacion === selectedUbicacion || supply.ubicacion === 'AMBOS';
     
     // Filtro para insumos críticos
     const matchesCritical = !showCriticalOnly || getStockStatus(supply) === 'critical';
@@ -541,7 +542,7 @@ const SuppliesPage: React.FC = () => {
               onChange={(e) => { setSelectedUbicacion(e.target.value); setCurrentPage(1); }}
             >
               <option value="">Todas las sucursales</option>
-              <option value="CITYFAST">City Fast (Libertad)</option>
+              <option value="CITYFAST">City Fast</option>
               <option value="ESQUINAFAST">Esquina Fast</option>
             </select>
             
