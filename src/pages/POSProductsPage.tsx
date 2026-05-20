@@ -6,12 +6,22 @@ import { Search, Package, DollarSign, ShoppingCart, Filter } from "lucide-react"
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Layout from '../components/layout/Layout';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function POSProductsPage() {
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const { ubicacion } = useAuthStore();
+
+  const filterByLocation = (items: Product[]): Product[] => {
+    if (!ubicacion) return items;
+    return items.filter(p => {
+      const loc = (p as any).ubicacion;
+      return !loc || loc === 'AMBOS' || loc === ubicacion;
+    });
+  };
 
   const [recipeOpen, setRecipeOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -23,7 +33,7 @@ export default function POSProductsPage() {
       console.log(`🔍 POSProductsPage: Buscando productos con query: "${query}"`);
       const res = await POSService.searchProducts(query.trim());
       console.log(`✅ POSProductsPage: ${res.length} productos encontrados`);
-      setProducts(res);
+      setProducts(filterByLocation(res));
     } catch (error) {
       console.error('❌ POSProductsPage: Error searching products:', error);
       setProducts([]);
@@ -43,7 +53,7 @@ export default function POSProductsPage() {
     }
   };
 
-  // Cargar productos populares al inicio
+  // Cargar productos al inicio y re-filtrar cuando cambie la ubicación del empleado
   useEffect(() => {
     const loadInitialProducts = async () => {
       setLoading(true);
@@ -51,7 +61,7 @@ export default function POSProductsPage() {
         console.log('🔍 POSProductsPage: Cargando productos iniciales...');
         const res = await POSService.getProducts(); // Obtener todos los productos
         console.log(`✅ POSProductsPage: ${res.length} productos cargados inicialmente`);
-        setProducts(res); // Mostrar todos los productos
+        setProducts(filterByLocation(res)); // Filtrar por sucursal del empleado
         setSearchPerformed(true);
       } catch (error) {
         console.error('❌ POSProductsPage: Error loading initial products:', error);
@@ -61,7 +71,7 @@ export default function POSProductsPage() {
     };
 
     loadInitialProducts();
-  }, []);
+  }, [ubicacion]); // Re-run when employee location is resolved
 
   return (
     <Layout>

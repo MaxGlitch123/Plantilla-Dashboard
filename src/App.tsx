@@ -22,3 +22,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+//also please just remove elements like this all around the code that you find ✅⚠️❌🔄
