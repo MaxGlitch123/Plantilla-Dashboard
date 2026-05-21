@@ -2,11 +2,11 @@
   "rewrites": [
     { 
       "source": "/api-proxy/:path*", 
-      "destination": "https://back-buensabor-a0wy.onrender.com/api/:path*"
+      "destination": "https://plantilla-pos-production.up.railway.app/:path*"
     },
     {
       "source": "/ws", 
-      "destination": "wss://back-buensabor-a0wy.onrender.com/api/ws"
+      "destination": "wss://plantilla-pos-production.up.railway.app/ws"
     },
     { 
       "source": "/(.*)", 
