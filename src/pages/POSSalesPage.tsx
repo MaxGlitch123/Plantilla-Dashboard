@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { Calendar, Search, Printer, Eye, Download, XCircle, TrendingUp, ChevronDown } from 'lucide-react';
 import { POSService } from '../services/posService';
 import { PrinterService } from '../services/printerService';
 import { Sale } from '../types/pos';
 import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Card from '../components/ui/Card';
 import VoidSaleModal from '../components/pos/VoidSaleModal';
 import Layout from '../components/layout/Layout';
 
@@ -217,47 +219,48 @@ const POSSalesPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Ventas del Punto de Venta
-        </h1>
-        <p className="text-gray-600">
-          Historial y gestión de todas las ventas realizadas en el POS
-        </p>
-      </div>
+      <div className="p-4 md:p-6">
 
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-2xl font-bold text-blue-600">{totalSales}</div>
-          <div className="text-gray-600">Ventas encontradas</div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-2xl font-bold text-green-600">${totalRevenue.toFixed(2)}</div>
-          <div className="text-gray-600">Total facturado</div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-2xl font-bold text-purple-600">
-            ${totalSales > 0 ? (totalRevenue / totalSales).toFixed(2) : '0.00'}
+        {/* Header */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-serif font-bold text-gray-800">Ventas del Punto de Venta</h1>
+            <p className="text-gray-600">Historial y gestión de todas las ventas realizadas en el POS</p>
           </div>
-          <div className="text-gray-600">Ticket promedio</div>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filteredSales.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
         </div>
-      </div>
 
-      {/* Ranking de Vendedores */}
-      {activeSales.length > 0 && (
-        <div className="bg-white rounded-lg shadow">
-          <button
-            className="w-full flex items-center justify-between px-6 py-4 text-left"
-            onClick={() => setShowRanking(v => !v)}
-          >
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-indigo-600" />
-              <span className="font-semibold text-gray-900">Ranking de Vendedores</span>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <div className="text-2xl font-bold text-blue-600">{totalSales}</div>
+            <div className="text-gray-600 text-sm mt-1">Ventas encontradas</div>
+          </Card>
+          <Card>
+            <div className="text-2xl font-bold text-green-600">${totalRevenue.toFixed(2)}</div>
+            <div className="text-gray-600 text-sm mt-1">Total facturado</div>
+          </Card>
+          <Card>
+            <div className="text-2xl font-bold text-purple-600">
+              ${totalSales > 0 ? (totalRevenue / totalSales).toFixed(2) : '0.00'}
+            </div>
+            <div className="text-gray-600 text-sm mt-1">Ticket promedio</div>
+          </Card>
+        </div>
+
+        {/* Ranking de Vendedores */}
+        {activeSales.length > 0 && (
+          <Card className="mb-6">
+            <button
+              className="w-full flex items-center justify-between text-left"
+              onClick={() => setShowRanking(v => !v)}
+            >
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-amber-500" />
+                <span className="font-semibold text-gray-800">Ranking de Vendedores</span>
               <span className="text-sm text-gray-500">({sellerRanking.length} cajero{sellerRanking.length !== 1 ? 's' : ''})</span>
             </div>
             <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showRanking ? 'rotate-180' : ''}`} />
@@ -296,34 +299,34 @@ const POSSalesPage: React.FC = () => {
               </table>
             </div>
           )}
-        </div>
-      )}
+          </Card>
+        )}
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          {/* Búsqueda */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Buscar por código, cliente o producto..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+        {/* Filtros */}
+        <Card className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            {/* Búsqueda */}
+            <div className="relative md:col-span-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Buscar por código, cajero o producto..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+              />
+            </div>
 
-          {/* Filtro por fecha */}
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="today">Hoy</option>
-            <option value="this-week">Esta semana</option>
-            <option value="this-month">Este mes</option>
-            <option value="custom">Rango personalizado</option>
+            {/* Filtro por fecha */}
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value="today">Hoy</option>
+              <option value="this-week">Esta semana</option>
+              <option value="this-month">Este mes</option>
+              <option value="custom">Rango personalizado</option>
           </select>
           {dateFilter === 'custom' && (
             <>
@@ -331,68 +334,60 @@ const POSSalesPage: React.FC = () => {
                 type="date"
                 value={customFrom}
                 onChange={e => setCustomFrom(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
               />
               <span className="text-sm text-gray-500 self-center">—</span>
               <input
                 type="date"
                 value={customTo}
                 onChange={e => setCustomTo(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500"
               />
             </>
           )}
 
-          {/* Filtro por cajero */}
-          <select
-            value={cashierFilter}
-            onChange={(e) => setCashierFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">Todos los cajeros</option>
-            {[...new Set(sales.map(s => s.employeeName).filter(Boolean))].sort().map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+            {/* Filtro por cajero */}
+            <select
+              value={cashierFilter}
+              onChange={(e) => setCashierFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value="all">Todos los cajeros</option>
+              {[...new Set(sales.map(s => s.employeeName).filter(Boolean))].sort().map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
 
-          {/* Filtro por método de pago */}
-          <select
-            value={paymentMethodFilter}
-            onChange={(e) => setPaymentMethodFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">Todos los métodos</option>
-            <option value="cash">Efectivo</option>
-            <option value="card">Tarjeta</option>
-            <option value="transfer">Transferencia</option>
-          </select>
+            {/* Filtro por método de pago */}
+            <select
+              value={paymentMethodFilter}
+              onChange={(e) => setPaymentMethodFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value="all">Todos los métodos</option>
+              <option value="cash">Efectivo</option>
+              <option value="card">Tarjeta</option>
+              <option value="transfer">Transferencia</option>
+            </select>
 
-          {/* Filtro por estado */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="ACTIVE">Activas</option>
-            <option value="VOIDED">Anuladas</option>
-          </select>
-
-          {/* Acciones */}
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={handleExportCSV} disabled={filteredSales.length === 0}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            {/* Filtro por estado */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="ACTIVE">Activas</option>
+              <option value="VOIDED">Anuladas</option>
+            </select>
           </div>
-        </div>
-      </div>
+        </Card>
 
-      {/* Lista de ventas */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        {/* Tabla de ventas */}
+        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando ventas...</p>
           </div>
         ) : filteredSales.length === 0 ? (
@@ -436,7 +431,7 @@ const POSSalesPage: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-gray-50">
+                  <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -464,13 +459,9 @@ const POSSalesPage: React.FC = () => {
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        sale.channel === 'pedidosya' 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}>
+                      <Badge variant={sale.channel === 'pedidosya' ? 'danger' : 'success'} size="sm">
                         {sale.channel === 'pedidosya' ? 'Pedidos Ya' : 'Local'}
-                      </span>
+                      </Badge>
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -484,11 +475,7 @@ const POSSalesPage: React.FC = () => {
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        getPaymentMethodColor(sale.paymentMethod)
-                      }`}>
-                        {getPaymentMethodText(sale.paymentMethod)}
-                      </span>
+                      <Badge variant="secondary" size="sm">{getPaymentMethodText(sale.paymentMethod)}</Badge>
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -503,43 +490,23 @@ const POSSalesPage: React.FC = () => {
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {sale.status === 'VOIDED' ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                          Anulada
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          Activa
-                        </span>
-                      )}
+                      <Badge variant={sale.status === 'VOIDED' ? 'danger' : 'success'} size="sm">
+                        {sale.status === 'VOIDED' ? 'Anulada' : 'Activa'}
+                      </Badge>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => setSelectedSale(sale)}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Ver detalles"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        
-                        <button
-                          onClick={() => handlePrintSale(sale)}
-                          className="text-green-600 hover:text-green-800"
-                          title="Reimprimir ticket"
-                        >
-                          <Printer className="h-4 w-4" />
-                        </button>
-
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedSale(sale)} title="Ver detalles">
+                          <Eye className="h-4 w-4 text-blue-600" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handlePrintSale(sale)} title="Reimprimir ticket">
+                          <Printer className="h-4 w-4 text-green-600" />
+                        </Button>
                         {sale.status === 'ACTIVE' && (
-                          <button
-                            onClick={() => setVoidingSale(sale)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Anular venta"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
+                          <Button variant="ghost" size="sm" onClick={() => setVoidingSale(sale)} title="Anular venta">
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -551,51 +518,45 @@ const POSSalesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de detalle de venta */}
-      {selectedSale && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold">Detalle de Venta</h3>
-              <button
-                onClick={() => setSelectedSale(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Código:</label>
-                  <p className="text-lg">{selectedSale.saleCode}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Total:</label>
-                  <p className={`text-lg font-bold ${selectedSale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
-                    ${selectedSale.total.toFixed(2)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Estado:</label>
-                  <p className="mt-1">
-                    {selectedSale.status === 'VOIDED' ? (
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        Anulada
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Activa
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Cajero:</label>
-                  <p className="text-sm">{selectedSale.employeeName}</p>
-                </div>
+        {/* Modal de detalle de venta */}
+        {selectedSale && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h3 className="text-lg font-serif font-semibold text-gray-800">Detalle de Venta</h3>
+                <button
+                  onClick={() => setSelectedSale(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                >
+                  ×
+                </button>
               </div>
+              
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Código:</label>
+                    <p className="text-lg font-medium text-gray-900">{selectedSale.saleCode}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Total:</label>
+                    <p className={`text-lg font-bold ${selectedSale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
+                      ${selectedSale.total.toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Estado:</label>
+                    <p className="mt-1">
+                      <Badge variant={selectedSale.status === 'VOIDED' ? 'danger' : 'success'} size="sm">
+                        {selectedSale.status === 'VOIDED' ? 'Anulada' : 'Activa'}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Cajero:</label>
+                    <p className="text-sm text-gray-900">{selectedSale.employeeName}</p>
+                  </div>
+                </div>
 
               {selectedSale.status === 'VOIDED' && selectedSale.voidReason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -613,14 +574,14 @@ const POSSalesPage: React.FC = () => {
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Productos:</label>
                 <div className="space-y-2">
                   {selectedSale.items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
                       <div>
-                        <p className="font-medium">{item.productName}</p>
+                        <p className="font-medium text-gray-900">{item.productName}</p>
                         <p className="text-sm text-gray-600">
                           ${item.price.toFixed(2)} × {item.quantity}
                         </p>
                       </div>
-                      <div className="font-bold">
+                      <div className="font-bold text-gray-800">
                         ${(item.price * item.quantity).toFixed(2)}
                       </div>
                     </div>
@@ -629,17 +590,16 @@ const POSSalesPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Modal de anulación */}
-      {voidingSale && (
-        <VoidSaleModal
-          saleCode={voidingSale.saleCode}
-          onConfirm={handleVoidSale}
-          onClose={() => setVoidingSale(null)}
-        />
-      )}
+        {/* Modal de anulación */}
+        {voidingSale && (
+          <VoidSaleModal
+            saleCode={voidingSale.saleCode}
+            onConfirm={handleVoidSale}
+            onClose={() => setVoidingSale(null)}
+          />
+        )}
       </div>
     </Layout>
   );
