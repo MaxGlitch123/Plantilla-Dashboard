@@ -233,6 +233,7 @@ const POSSalesPage: React.FC = () => {
           </Button>
         </div>
 
+      {/* Estadísticas rápidas */}
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card>
@@ -590,6 +591,7 @@ const POSSalesPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {/* Modal de anulación */}
