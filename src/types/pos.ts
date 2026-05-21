@@ -50,6 +50,7 @@ export interface Product {
   isActive?: boolean;
   active?: boolean;
   barcode?: string | null;
+  ubicacion?: 'CITYFAST' | 'ESQUINAFAST' | 'AMBOS';
 }
 
 export interface PaymentDetails {

@@ -38,6 +38,7 @@ export class POSService {
         unitMeasure: product.unidadMedida?.denominacion || 'unidad',
         isActive: true,
         barcode: `POS${product.id}`,
+        ubicacion: product.ubicacion ?? 'AMBOS',
       }));
 
       console.log(`🎯 POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
