@@ -24,6 +24,7 @@ import ClientAccessDeniedPage from '../pages/ClientAccessDeniedPage';
 // POS Pages
 import POSPage from '../pages/POSPage';
 import POSSalesPage from '../pages/POSSalesPage';
+import MisSalesPage from '../pages/MisSalesPage';
 import POSProductsPage from '../pages/POSProductsPage';
 import CashRegisterPage from '../pages/CashRegisterPage';
 
@@ -273,6 +274,18 @@ const AppRoutes: React.FC = () => {
               enableAdvancedGuard={true}
             >
               <POSSalesPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/pos/my-sales" 
+          element={
+            <ProtectedRoute 
+              allowedRoles={POS_ROLES}
+              enableAdvancedGuard={true}
+            >
+              <MisSalesPage />
             </ProtectedRoute>
           } 
         />

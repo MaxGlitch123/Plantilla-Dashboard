@@ -7,7 +7,7 @@ export class PrinterService {
   private static defaultSettings = {
     printerName: 'Kretz LEX 850',
     paperWidth: 80, // caracteres (impresora matricial)
-    fontSize: 16, // Tamaño grande legible para producción
+    fontSize: 20, // Tamaño grande legible para producción
     lineSpacing: 1.2, // Espaciado cómodo
     margins: { top: 2, bottom: 3, left: 2, right: 2 },
     enableLogo: false, // Sin logo para matricial
@@ -411,7 +411,6 @@ export class PrinterService {
 
     <div class="footer">
       <div class="footer-message">🙏 ¡Gracias por su compra!</div>
-      <div class="footer-website">🌐 Visite www.cityfast.com</div>
       <div class="footer-message">💖 ¡Esperamos verle pronto!</div>
       <div class="footer-timestamp">
         🕒 Generado: ${date.toLocaleString('es-ES')}
@@ -498,7 +497,6 @@ export class PrinterService {
     
     // Pie de página
     ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    ticket += this.centerText('www.cityfast.com', 48) + '\n\n';
     ticket += this.centerText(date.toLocaleString(), 48) + '\n';
     
     // Saltos de línea finales para corte de papel
@@ -513,9 +511,9 @@ export class PrinterService {
   <style>
     @media print {
       @page { size: auto; margin: 0; }
-      body { margin: 0; font-family: 'Arial', sans-serif; font-size: 16px; line-height: 1.4; }
+      body { margin: 0; font-family: 'Arial', sans-serif; font-size: 20px; line-height: 1.4; }
     }
-    body { font-family: 'Arial', sans-serif; font-size: 16px; white-space: pre; line-height: 1.4; }
+    body { font-family: 'Arial', sans-serif; font-size: 20px; white-space: pre; line-height: 1.4; }
   </style>
 </head>
 <body>${ticket}</body>
@@ -548,7 +546,7 @@ export class PrinterService {
         if (doc) {
           doc.open();
           doc.write(`<html><head><style>
-            body { font-family: 'Arial', sans-serif; font-size: 16px; white-space: pre; margin: 0; line-height: 1.4; }
+            body { font-family: 'Arial', sans-serif; font-size: 20px; white-space: pre; margin: 0; line-height: 1.4; }
             @media print { @page { size: auto; margin: 2mm; } }
           </style></head><body>${textContent}</body></html>`);
           doc.close();
@@ -621,7 +619,6 @@ export class PrinterService {
     
     // Pie
     ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    ticket += this.centerText('www.cityfast.com', 48) + '\n\n';
     
     // Saltos para corte manual
     ticket += '\n\n\n';
