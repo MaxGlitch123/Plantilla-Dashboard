@@ -17,7 +17,7 @@ const MisSalesPage: React.FC = () => {
     });
   }, []);
 
-  const [sales, setSales] = useState<Sale[]>([];
+  const [sales, setSales] = useState<Sale[]>([]);
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
