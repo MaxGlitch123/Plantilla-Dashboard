@@ -43,7 +43,7 @@ const EmployeesPage: React.FC = () => {
           console.log('Intentando cargar empleados...');
           const empData = await fetchEmployees();
           console.log('Empleados cargados correctamente:', empData);
-          setEmployees(empData);
+          setEmployees(empData.filter(e => !e.deleted));
         } catch (empErr) {
           console.error('Error específico al cargar empleados:', empErr);
         }

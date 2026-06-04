@@ -41,7 +41,7 @@ export class POSService {
         ubicacion: product.ubicacion ?? 'AMBOS',
       }));
 
-      console.log(`🎯 POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
+      console.log(` POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
       return mappedProducts;
       
     } catch (error) {

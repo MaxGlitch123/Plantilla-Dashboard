@@ -10,12 +10,12 @@ import { Supply } from '../types/supply';
 export const normalizeManufacturedProduct = (product: any): MenuItem => {
   // Función para estandarizar la estructura de los productos manufacturados basado en
   // la estructura real observada en el endpoint /articulosManufacturados
-  console.log('Normalizando datos de producto:', product ? product.denominacion : 'Producto no definido');
+  console.log(' Normalizando datos de producto:', product ? product.denominacion : 'Producto no definido');
   
   // Asegurar que product sea un objeto no nulo
   if (!product) {
     product = {};
-    console.warn('El producto recibido es nulo o indefinido');
+    console.warn(' El producto recibido es nulo o indefinido');
   }
 
   // Asegúrate de que categoría siempre tenga una estructura válida
@@ -27,29 +27,29 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
   if (product.categoria) {
     categoria = product.categoria;
     categoriaId = categoria.id;
-    console.log(`Caso 1: Producto tiene objeto 'categoria' con ID ${categoria.id}`);
+    console.log(` Caso 1: Producto tiene objeto 'categoria' con ID ${categoria.id}`);
   } 
   // Caso 2: El producto tiene categoriaId como string/number y no tiene categoria
   else if (product.categoriaId) {
     categoriaId = product.categoriaId;
-    console.log(`Caso 2: Producto tiene 'categoriaId' ${categoriaId}`);
+    console.log(` Caso 2: Producto tiene 'categoriaId' ${categoriaId}`);
   } 
   // Caso 3: El producto tiene el campo idCategoria (algunas respuestas de API)
   else if (product.idCategoria) {
     categoriaId = product.idCategoria;
-    console.log(`Caso 3: Producto tiene 'idCategoria' ${categoriaId}`);
+    console.log(` Caso 3: Producto tiene 'idCategoria' ${categoriaId}`);
   }
   // Caso 4: El producto tiene campo 'category' en inglés (convención antigua)
   else if (typeof product.category === 'object' && product.category?.id) {
     categoria = product.category;
     categoriaId = categoria.id;
-    console.log(`Caso 4: Producto tiene objeto 'category' con ID ${categoriaId}`);
+    console.log(` Caso 4: Producto tiene objeto 'category' con ID ${categoriaId}`);
   }
   
   // Si no se encontró ningún categoriaId, usar 0 como valor por defecto
   if (categoriaId === null) {
     categoriaId = '0';
-    console.warn('No se encontró información de categoría en el producto, usando ID 0');
+    console.warn(' No se encontró información de categoría en el producto, usando ID 0');
   }
   
   // Asegurar que categoriaId sea string para MenuItem
@@ -62,12 +62,12 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
       denominacion: 'Sin categoría',
       deleted: false 
     };
-    console.warn(`Creando objeto de categoría predeterminado con ID ${categoriaId}`);
+    console.warn(` Creando objeto de categoría predeterminado con ID ${categoriaId}`);
   }
   
   // Debug para encontrar problemas con las categorías
   if (product.id) {
-    console.log(`Producto ${product.id} (${product.denominacion || 'sin nombre'}):`);
+    console.log(` Producto ${product.id} (${product.denominacion || 'sin nombre'}):`);
     console.log(`   - Categoría: ${categoria.denominacion || 'Sin nombre'} (ID: ${categoria.id})`);
   }
 
@@ -78,25 +78,25 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
     // Primero verificar estructuras anidadas
     if (Array.isArray(product.detalles?.detalles)) {
       detalles = product.detalles.detalles;
-      console.log(`Usando ${detalles.length} detalles de 'product.detalles.detalles'`);
+      console.log(` Usando ${detalles.length} detalles de 'product.detalles.detalles'`);
     } else if (Array.isArray(product.detalles)) {
       detalles = product.detalles;
-      console.log(`Usando ${detalles.length} detalles de 'product.detalles'`);
+      console.log(` Usando ${detalles.length} detalles de 'product.detalles'`);
     } else if (Array.isArray(product.articuloManufacturadoDetalleList)) {
       detalles = product.articuloManufacturadoDetalleList;
-      console.log(`Usando ${detalles.length} detalles de 'product.articuloManufacturadoDetalleList'`);
+      console.log(` Usando ${detalles.length} detalles de 'product.articuloManufacturadoDetalleList'`);
     } else if (Array.isArray(product.articuloManufacturadoDetalles)) {
       detalles = product.articuloManufacturadoDetalles;
-      console.log(`Usando ${detalles.length} detalles de 'product.articuloManufacturadoDetalles'`);
+      console.log(` Usando ${detalles.length} detalles de 'product.articuloManufacturadoDetalles'`);
     } else {
-      console.warn('No se encontraron detalles en ninguna propiedad conocida');
+      console.warn(' No se encontraron detalles en ninguna propiedad conocida');
       detalles = [];
     }
     
     // Mapear los detalles para normalizarlos
     detalles = detalles.map((detalle: any): ProductDetail => {
       // Impresión de depuración para ver estructura exacta del detalle
-      console.log('Estructura del detalle:', JSON.stringify(detalle, null, 2));
+      console.log(' Estructura del detalle:', JSON.stringify(detalle, null, 2));
       
       // Manejar diferentes estructuras de insumo del backend
       let insumo = null;
@@ -106,20 +106,20 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
       if (detalle.item && detalle.item.id) {
         // ESTRUCTURA NUEVA del mapper corregido - prioridad alta
         insumo = detalle.item;
-        console.log('Insumo encontrado en detalle.item (estructura nueva)');
+        console.log('✅ Insumo encontrado en detalle.item (estructura nueva)');
       } else if (detalle.articuloInsumo && detalle.articuloInsumo.id) {
         // Formato con articuloInsumo completo
         insumo = detalle.articuloInsumo;
-        console.log('Insumo encontrado en articuloInsumo estructurado');
+        console.log('✅ Insumo encontrado en articuloInsumo estructurado');
       } else if (detalle.insumo) {
         insumo = detalle.insumo;
-        console.log('Insumo encontrado en insumo');
+        console.log('✅ Insumo encontrado en insumo');
       } else if (detalle.articulo) {
         insumo = detalle.articulo;
-        console.log('Insumo encontrado en articulo');
+        console.log('✅ Insumo encontrado en articulo');
       } else if (detalle.articuloInsumo) {
         insumo = detalle.articuloInsumo;
-        console.log('Insumo encontrado en articuloInsumo');
+        console.log('✅ Insumo encontrado en articuloInsumo');
       } else {
         // Si no hay insumo en ninguna propiedad conocida, pero tenemos un ID, crear un objeto insumo
         if (detalle.id) {
@@ -135,7 +135,7 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
               abreviatura: "U"
             }
           };
-          console.log(`Creando insumo a partir del ID del detalle: ${detalle.id}`);
+          console.log(` Creando insumo a partir del ID del detalle: ${detalle.id}`);
           
           // Intentar obtener información adicional del insumo de forma asincrónica
           // Esto no bloqueará la función principal pero podría ayudar en una carga futura
@@ -144,7 +144,7 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
               .then(response => response.ok ? response.json() : null)
               .then(data => {
                 if (data) {
-                  console.log(`Datos adicionales encontrados para insumo ${detalle.id}`);
+                  console.log(`✅ Datos adicionales encontrados para insumo ${detalle.id}`);
                 }
               })
               .catch(() => {
@@ -154,20 +154,20 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
         } else {
           // Último recurso: usar el propio detalle sin adaptarlo
           insumo = detalle;
-          console.log('Usando detalle como insumo por falta de estructura esperada');
+          console.log('⚠️ Usando detalle como insumo por falta de estructura esperada');
         }
       }
       
       if (!insumo) {
         insumo = {};
-        console.error('No se pudo identificar el insumo en el detalle');
+        console.error(' No se pudo identificar el insumo en el detalle');
       }
       
       // Depuración para el insumo encontrado
-      console.log(`Insumo identificado: ID=${insumo.id || 'no definido'}, Nombre=${insumo.denominacion || 'no definido'}`);
+      console.log(` Insumo identificado: ID=${insumo.id || 'no definido'}, Nombre=${insumo.denominacion || 'no definido'}`);
       
       if (!insumo.id) {
-        console.warn('Detalle con insumo sin ID:', detalle);
+        console.warn(' Detalle con insumo sin ID:', detalle);
       }
 
       // Normalizar la unidad de medida (puede ser string, objeto o estar en diferentes propiedades)
@@ -178,13 +178,13 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
         console.log('Unidad de medida encontrada como objeto:', unidadMedida.denominacion);
       } else if (insumo.unidadDeMedida && typeof insumo.unidadDeMedida === 'object') {
         unidadMedida = insumo.unidadDeMedida;
-        console.log('Unidad de medida encontrada en unidadDeMedida:', unidadMedida.denominacion);
+        console.log(' Unidad de medida encontrada en unidadDeMedida:', unidadMedida.denominacion);
       } else if (typeof insumo.unidadMedida === 'string') {
         unidadMedida = { id: 1, denominacion: insumo.unidadMedida };
-        console.log('Unidad de medida encontrada como string:', insumo.unidadMedida);
+        console.log(' Unidad de medida encontrada como string:', insumo.unidadMedida);
       } else if (typeof insumo.unidadMedidaNombre === 'string') {
         unidadMedida = { id: insumo.unidadMedidaId || 1, denominacion: insumo.unidadMedidaNombre };
-        console.log('Unidad de medida encontrada en unidadMedidaNombre:', insumo.unidadMedidaNombre);
+        console.log(' Unidad de medida encontrada en unidadMedidaNombre:', insumo.unidadMedidaNombre);
       } else if (typeof detalle.tipo === 'string' && detalle.item?.unidadMedida) {
         // Estructura desde ArticuloManufacturadoDetalleController - nueva versión que incluye abreviatura
         if (typeof detalle.item.unidadMedida === 'object' && detalle.item.unidadMedida !== null) {
@@ -198,12 +198,12 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
             ? { id: 1, denominacion: detalle.item.unidadMedida, abreviatura: '' } 
             : detalle.item.unidadMedida;
         }
-        console.log('Unidad de medida encontrada en detalle.item.unidadMedida:', 
+        console.log(' Unidad de medida encontrada en detalle.item.unidadMedida:', 
           typeof unidadMedida === 'object' ? unidadMedida.denominacion : unidadMedida);
       } else {
         // Valor por defecto
         unidadMedida = { id: 1, denominacion: 'Unidad', abreviatura: 'U' };
-        console.warn('Unidad de medida no encontrada, usando valor por defecto');
+        console.warn(' Unidad de medida no encontrada, usando valor por defecto');
       }
         
       // Normalizar la categoría del insumo (puede estar en diferentes propiedades)
@@ -211,14 +211,14 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
       
       if (insumo.categoria && typeof insumo.categoria === 'object') {
         insumoCategoria = insumo.categoria;
-        console.log('Categoría encontrada en insumo.categoria:', insumoCategoria.denominacion);
+        console.log(' Categoría encontrada en insumo.categoria:', insumoCategoria.denominacion);
       } else if (insumo.category && typeof insumo.category === 'object') {
         insumoCategoria = {
           id: insumo.category.id,
           denominacion: insumo.category.denominacion || insumo.category.name || 'Sin nombre',
           esInsumo: true
         };
-        console.log('Categoría encontrada en insumo.category:', insumoCategoria.denominacion);
+        console.log(' Categoría encontrada en insumo.category:', insumoCategoria.denominacion);
       } else {
         // Valor por defecto
         insumoCategoria = {
@@ -226,7 +226,7 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
           denominacion: 'Sin categoría',
           esInsumo: true,
         };
-        console.warn('Categoría no encontrada, usando valor por defecto');
+        console.warn(' Categoría no encontrada, usando valor por defecto');
       }
       
       if (typeof insumoCategoria.id === 'string') {
@@ -248,7 +248,7 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
         deleted: insumo.deleted !== undefined ? insumo.deleted : false
       };
       
-      console.log(`Insumo normalizado: ${supplyItem.denominacion} (${supplyItem.id})`);
+      console.log(` Insumo normalizado: ${supplyItem.denominacion} (${supplyItem.id})`);
       console.log(`   - Unidad: ${typeof supplyItem.unidadMedida === 'object' ? supplyItem.unidadMedida.denominacion : supplyItem.unidadMedida}`);
       console.log(`   - Categoría: ${supplyItem.categoria ? supplyItem.categoria.denominacion : 'Sin categoría'}`);
 
@@ -259,9 +259,9 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
       };
     });
     
-    console.log(`Normalizados ${detalles.length} detalles/ingredientes`);
+    console.log(`✅ Normalizados ${detalles.length} detalles/ingredientes`);
   } catch (error) {
-    console.error('Error al normalizar detalles:', error);
+    console.error('❌ Error al normalizar detalles:', error);
     detalles = [];
   }
 
@@ -270,19 +270,19 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
   try {
     if (Array.isArray(product.imagenes)) {
       imagenes = product.imagenes;
-      console.log(`Encontradas ${imagenes.length} imágenes en 'product.imagenes'`);
+      console.log(` Encontradas ${imagenes.length} imágenes en 'product.imagenes'`);
     } else if (Array.isArray(product.images)) {
       imagenes = product.images;
-      console.log(`Encontradas ${imagenes.length} imágenes en 'product.images'`);
+      console.log(` Encontradas ${imagenes.length} imágenes en 'product.images'`);
     } else if (typeof product.imagen === 'string') {
       imagenes = [product.imagen];
-      console.log("Encontrada 1 imagen en 'product.imagen'");
+      console.log(" Encontrada 1 imagen en 'product.imagen'");
     } else {
-      console.warn('No se encontraron imágenes');
+      console.warn('⚠️ No se encontraron imágenes');
       imagenes = [];
     }
   } catch (error) {
-    console.error('Error al procesar imágenes:', error);
+    console.error('❌ Error al procesar imágenes:', error);
     imagenes = [];
   }
 
@@ -307,13 +307,13 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
     // Depuración detallada de categoría
     ...(()=>{
       if (categoria.id) {
-        console.log(`Categoría normalizada exitosamente:
+        console.log(`✅ Categoría normalizada exitosamente:
           - ID: ${String(categoria.id || categoriaId)}
           - Nombre: ${categoria.denominacion || 'Sin categoría'}
           - Original: ${JSON.stringify(product.categoria || {})}
         `);
       } else {
-        console.warn('Categoría indefinida normalizada como "Sin categoría" con ID 0');
+        console.warn('⚠️ Categoría indefinida normalizada como "Sin categoría" con ID 0');
       }
       return {};
     })(),
@@ -336,7 +336,7 @@ export const normalizeManufacturedProduct = (product: any): MenuItem => {
     status: product.status || 'active',
   };
   
-  console.log('Producto normalizado correctamente:', normalizedItem.denominacion);
+  console.log('✅ Producto normalizado correctamente:', normalizedItem.denominacion);
   
   return normalizedItem;
 }

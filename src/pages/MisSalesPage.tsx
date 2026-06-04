@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Calendar, Search, Printer, Eye, XCircle } from 'lucide-react';
-import { useAuth0 } from '@auth0/auth0-react';
 import { POSService } from '../services/posService';
 import { PrinterService } from '../services/printerService';
 import { Sale } from '../types/pos';
@@ -8,8 +7,11 @@ import VoidSaleModal from '../components/pos/VoidSaleModal';
 import Layout from '../components/layout/Layout';
 
 const MisSalesPage: React.FC = () => {
-  const { user } = useAuth0();
-  const currentEmployeeName = user?.name ?? '';
+  const [currentEmployeeName, setCurrentEmployeeName] = useState('');
+
+  useEffect(() => {
+    POSService.getEmployeeInfo().then(info => setCurrentEmployeeName(info.name));
+  }, []);
 
   const [sales, setSales] = useState<Sale[]>([]);
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
