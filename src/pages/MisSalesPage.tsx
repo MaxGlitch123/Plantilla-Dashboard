@@ -7,13 +7,17 @@ import VoidSaleModal from '../components/pos/VoidSaleModal';
 import Layout from '../components/layout/Layout';
 
 const MisSalesPage: React.FC = () => {
+  const [currentEmployeeId, setCurrentEmployeeId] = useState('');
   const [currentEmployeeName, setCurrentEmployeeName] = useState('');
 
   useEffect(() => {
-    POSService.getEmployeeInfo().then(info => setCurrentEmployeeName(info.name));
+    POSService.getEmployeeInfo().then(info => {
+      setCurrentEmployeeId(String(info.id));
+      setCurrentEmployeeName(info.name);
+    });
   }, []);
 
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [sales, setSales] = useState<Sale[]>([];
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,14 +56,17 @@ const MisSalesPage: React.FC = () => {
         salesData = await POSService.getSalesByDateRange(from, today);
       }
 
-      // Only my own sales
-      setSales(salesData.filter(s => s.employeeName === currentEmployeeName));
+      // Only my own sales — filter by ID (most reliable) with name as fallback
+      setSales(salesData.filter(s => {
+        if (currentEmployeeId && s.employeeId) return s.employeeId === currentEmployeeId;
+        return s.employeeName === currentEmployeeName;
+      }));
     } catch (error) {
       console.error('Error loading sales:', error);
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, customFrom, customTo, currentEmployeeName]);
+  }, [dateFilter, customFrom, customTo, currentEmployeeId, currentEmployeeName]);
 
   useEffect(() => {
     loadSales();

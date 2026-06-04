@@ -615,7 +615,7 @@ export class POSService {
       id: String(s.id),
       saleCode: s.saleCode || '',
       saleDate: s.saleDate || '',
-      employeeId: '',
+      employeeId: String(s.employeeId ?? ''),
       employeeName: s.employeeName || '',
       items: (s.items || []).map((item: any) => ({
         id: String(item.productId),
