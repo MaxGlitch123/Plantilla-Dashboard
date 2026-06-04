@@ -12,8 +12,10 @@ const MisSalesPage: React.FC = () => {
 
   useEffect(() => {
     POSService.getEmployeeInfo().then(info => {
+      console.log('[MisSales] employee info resolved:', info);
       setCurrentEmployeeId(String(info.id));
-      setCurrentEmployeeName(info.name);
+      // Use just "nombre" for matching against sale.employeeName (backend stores only nombre)
+      setCurrentEmployeeName(info.nombre || info.name);
     });
   }, []);
 
@@ -57,9 +59,14 @@ const MisSalesPage: React.FC = () => {
       }
 
       // Only my own sales — filter by ID (most reliable) with name as fallback
+      console.log('[MisSales] total salesData:', salesData.length, '| filtering by id:', currentEmployeeId, 'name:', currentEmployeeName);
+      if (salesData.length > 0) {
+        console.log('[MisSales] sample sale fields:', { employeeId: salesData[0].employeeId, employeeName: salesData[0].employeeName });
+      }
       setSales(salesData.filter(s => {
         if (currentEmployeeId && s.employeeId) return s.employeeId === currentEmployeeId;
-        return s.employeeName === currentEmployeeName;
+        if (currentEmployeeName && currentEmployeeName !== 'Empleado') return s.employeeName === currentEmployeeName;
+        return false;
       }));
     } catch (error) {
       console.error('Error loading sales:', error);

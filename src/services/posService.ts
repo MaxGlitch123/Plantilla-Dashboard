@@ -406,7 +406,7 @@ export class POSService {
   }
 
   // Obtener info del empleado autenticado actual (id + nombre)
-  static async getEmployeeInfo(): Promise<{ id: number; name: string }> {
+  static async getEmployeeInfo(): Promise<{ id: number; name: string; nombre: string }> {
     try {
       // Enviar el nombre de Auth0 (ID token) al backend para sincronización
       const params: Record<string, string> = {};
@@ -414,17 +414,20 @@ export class POSService {
         params.name = _auth0UserName;
       }
       const response = await apiClient.get('/Empleados/me', { params });
+      console.log('[POSService] /Empleados/me raw response:', response.data);
       if (response.data && response.data.id) {
         const nombre = response.data.nombre || '';
         const apellido = response.data.apellido || '';
         return {
           id: parseInt(response.data.id),
           name: `${nombre} ${apellido}`.trim() || 'Empleado',
+          nombre: nombre,
         };
       }
-      return { id: 1, name: 'Empleado' };
-    } catch {
-      return { id: 1, name: 'Empleado' };
+      return { id: 1, name: 'Empleado', nombre: '' };
+    } catch (err: any) {
+      console.error('[POSService] /Empleados/me failed:', err?.response?.status, err?.message);
+      return { id: 1, name: 'Empleado', nombre: '' };
     }
   }
 
@@ -615,8 +618,8 @@ export class POSService {
       id: String(s.id),
       saleCode: s.saleCode || '',
       saleDate: s.saleDate || '',
-      employeeId: String(s.employeeId ?? ''),
-      employeeName: s.employeeName || '',
+      employeeId: String(s.employeeId ?? s.empleadoId ?? s.employee?.id ?? ''),
+      employeeName: s.employeeName || s.cajero || s.empleado?.nombre || '',
       items: (s.items || []).map((item: any) => ({
         id: String(item.productId),
         productId: String(item.productId),
