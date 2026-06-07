@@ -27,19 +27,36 @@ export class POSService {
         return this.getSampleProducts();
       }
 
-      const mappedProducts = products.map((product: any) => ({
-        id: product.id.toString(),
-        name: product.denominacion,
-        price: product.precioVenta || 0,
-        category: product.categoria?.denominacion || 'Sin categoría',
-        subcategory: product.categoria?.denominacion,
-        description: product.descripcion || `Producto ${product.denominacion}`,
-        image: product.imagenesArticulos?.[0]?.url,
-        unitMeasure: product.unidadMedida?.denominacion || 'unidad',
-        isActive: true,
-        barcode: `POS${product.id}`,
-        ubicacion: product.ubicacion ?? 'AMBOS',
-      }));
+      const mappedProducts = products.map((product: any) => {
+        // Calculate producible units from available ingredient stock:
+        // stock = min( floor(ingredient.stockActual / requiredQty) ) across all recipe ingredients
+        let calculatedStock = 0;
+        const detalles: any[] = product.detalles ? [...product.detalles] : [];
+        if (detalles.length > 0) {
+          calculatedStock = detalles.reduce((min: number, det: any) => {
+            const stockActual = det.articuloInsumo?.stockActual ?? 0;
+            const cantidad = det.cantidad ?? 1;
+            const canMake = cantidad > 0 ? Math.floor(stockActual / cantidad) : 0;
+            return Math.min(min, canMake);
+          }, Infinity);
+          if (!isFinite(calculatedStock)) calculatedStock = 0;
+        }
+
+        return {
+          id: product.id.toString(),
+          name: product.denominacion,
+          price: product.precioVenta || 0,
+          category: product.categoria?.denominacion || 'Sin categoría',
+          subcategory: product.categoria?.denominacion,
+          description: product.descripcion || `Producto ${product.denominacion}`,
+          image: product.imagenesArticulos?.[0]?.url,
+          unitMeasure: product.unidadMedida?.denominacion || 'unidad',
+          stock: calculatedStock,
+          isActive: true,
+          barcode: `POS${product.id}`,
+          ubicacion: product.ubicacion ?? 'AMBOS',
+        };
+      });
 
       console.log(` POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
       return mappedProducts;
