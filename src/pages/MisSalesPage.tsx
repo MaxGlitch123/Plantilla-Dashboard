@@ -82,6 +82,20 @@ const MisSalesPage: React.FC = () => {
     return () => window.removeEventListener('pos-sale-completed', handleNewSale);
   }, [loadSales]);
 
+  const TIME_ZONE = 'America/Argentina/Buenos_Aires';
+  const formatDate = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-AR', { timeZone: TIME_ZONE });
+  };
+  const formatTime = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleTimeString('es-AR', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
   useEffect(() => {
     let filtered = [...sales];
 
@@ -294,8 +308,8 @@ const MisSalesPage: React.FC = () => {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{new Date(sale.saleDate).toLocaleDateString()}</div>
-                        <div className="text-sm text-gray-500">{new Date(sale.saleDate).toLocaleTimeString()}</div>
+                        <div className="text-sm text-gray-900">{formatDate(sale.saleDate)}</div>
+                        <div className="text-sm text-gray-500">{formatTime(sale.saleDate)}</div>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -392,7 +406,7 @@ const MisSalesPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700">Fecha:</label>
-                    <p className="text-sm">{new Date(selectedSale.saleDate).toLocaleString()}</p>
+                    <p className="text-sm">{formatDate(selectedSale.saleDate)} {formatTime(selectedSale.saleDate)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700">Estado:</label>
@@ -412,7 +426,7 @@ const MisSalesPage: React.FC = () => {
                     <p className="text-sm text-red-700">{selectedSale.voidReason}</p>
                     {selectedSale.voidedAt && (
                       <p className="text-xs text-red-500 mt-1">
-                        Anulada el {new Date(selectedSale.voidedAt).toLocaleString()}
+                        Anulada el {formatDate(selectedSale.voidedAt)} {formatTime(selectedSale.voidedAt)}
                       </p>
                     )}
                   </div>
