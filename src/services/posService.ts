@@ -435,7 +435,7 @@ export class POSService {
   static mapPaymentMethod(frontendMethod: string): string {
     const methodMap: Record<string, string> = {
       'cash': 'EFECTIVO',
-      'card': 'MERCADOPAGO', 
+      'card': 'TARJETA',
       'transfer': 'TRANSFERENCIA'
     };
     
@@ -651,6 +651,7 @@ export class POSService {
   private static mapBackendSaleToFrontend(s: any): Sale {
     const paymentMap: Record<string, 'cash' | 'card' | 'transfer'> = {
       'EFECTIVO': 'cash',
+      'TARJETA': 'card',
       'MERCADOPAGO': 'card',
       'CREDIT_CARD': 'card',
       'DEBIT_CARD': 'card',

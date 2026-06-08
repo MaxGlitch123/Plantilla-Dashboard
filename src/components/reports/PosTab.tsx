@@ -5,6 +5,14 @@ import { Bar } from 'react-chartjs-2';
 import type { VentaArticuloItem, VentaRubroItem, PosResumen, PosFormaPagoItem } from '../../api/dashboard';
 import { formatCurrency, ARTICULO_CHART_OPTIONS } from '../../utils/reportUtils';
 
+const FORMA_PAGO_LABEL: Record<string, string> = {
+  'EFECTIVO': 'Efectivo',
+  'TARJETA': 'Tarjeta',
+  'MERCADOPAGO': 'MercadoPago',
+  'TRANSFERENCIA': 'Transferencia',
+  'QR': 'QR / Transferencia',
+};
+
 interface Props {
   posResumen: PosResumen;
   posArticulos: VentaArticuloItem[];
@@ -93,10 +101,11 @@ const PosTab: React.FC<Props> = ({ posResumen, posArticulos, posRubros, posForma
               {posFormaPago.map((fp) => {
                 const totalVentasPos = posFormaPago.reduce((s, x) => s + x.totalVentas, 0);
                 const pct = totalVentasPos > 0 ? Math.round((fp.totalVentas / totalVentasPos) * 100) : 0;
+                const label = FORMA_PAGO_LABEL[fp.formaPago] ?? fp.formaPago;
                 return (
                   <div key={fp.formaPago}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600 capitalize">{fp.formaPago.toLowerCase().replace('_', ' ')}</span>
+                      <span className="text-gray-600">{label}</span>
                       <span className="font-medium">{fp.totalVentas} ventas · {formatCurrency(fp.ingresos)} ({pct}%)</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
