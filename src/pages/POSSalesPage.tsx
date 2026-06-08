@@ -70,6 +70,20 @@ const POSSalesPage: React.FC = () => {
     return () => window.removeEventListener('pos-sale-completed', handleNewSale);
   }, [loadSales]);
 
+  const TIME_ZONE = 'America/Argentina/Buenos_Aires';
+  const formatDate = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('es-AR', { timeZone: TIME_ZONE });
+  };
+  const formatTime = (iso?: string) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleTimeString('es-AR', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
   // Aplicar filtros
   useEffect(() => {
     let filtered = [...sales];
@@ -175,12 +189,11 @@ const POSSalesPage: React.FC = () => {
   const handleExportCSV = () => {
     const headers = ['Código', 'Fecha', 'Hora', 'Cajero', 'Canal', 'Items', 'Método de Pago', 'Total', 'Estado'];
     const rows = filteredSales.map(sale => {
-      const date = new Date(sale.saleDate);
       const itemsList = sale.items.map(i => `${i.productName} x${i.quantity}`).join(' | ');
       return [
         sale.saleCode,
-        date.toLocaleDateString('es-AR'),
-        date.toLocaleTimeString('es-AR'),
+        formatDate(sale.saleDate),
+        formatTime(sale.saleDate),
         sale.employeeName || '',
         sale.channel === 'pedidosya' ? 'Pedidos Ya' : 'Local',
         itemsList,
@@ -448,10 +461,10 @@ const POSSalesPage: React.FC = () => {
                     
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {new Date(sale.saleDate).toLocaleDateString()}
+                        {formatDate(sale.saleDate)}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {new Date(sale.saleDate).toLocaleTimeString()}
+                        {formatTime(sale.saleDate)}
                       </div>
                     </td>
                     
@@ -559,15 +572,15 @@ const POSSalesPage: React.FC = () => {
                   </div>
                 </div>
 
-              {selectedSale.status === 'VOIDED' && selectedSale.voidReason && (
+                  {selectedSale.status === 'VOIDED' && selectedSale.voidReason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-sm font-medium text-red-800">Motivo de anulación:</p>
                   <p className="text-sm text-red-700">{selectedSale.voidReason}</p>
-                  {selectedSale.voidedAt && (
-                    <p className="text-xs text-red-500 mt-1">
-                      Anulada el {new Date(selectedSale.voidedAt).toLocaleString()}
-                    </p>
-                  )}
+                      {selectedSale.voidedAt && (
+                        <p className="text-xs text-red-500 mt-1">
+                          Anulada el {formatDate(selectedSale.voidedAt)} {formatTime(selectedSale.voidedAt)}
+                        </p>
+                      )}
                 </div>
               )}
               
