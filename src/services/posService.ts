@@ -659,10 +659,29 @@ export class POSService {
       'QR': 'transfer',
     };
 
+    // Normalize backend saleDate strings to a proper ISO format with timezone when possible.
+    let saleDateRaw = s.saleDate || '';
+    let saleDateNormalized = saleDateRaw;
+    try {
+      if (typeof saleDateRaw === 'string' && saleDateRaw) {
+        // Common backend format: 'YYYY-MM-DD HH:mm:ss' -> convert to 'YYYY-MM-DDTHH:mm:ssZ' (assume UTC)
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(saleDateRaw)) {
+          saleDateNormalized = saleDateRaw.replace(' ', 'T') + 'Z';
+          console.debug('posService: normalized backend saleDate (space) ->', saleDateRaw, '->', saleDateNormalized);
+        } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(saleDateRaw)) {
+          // If it's 'YYYY-MM-DDTHH:mm:ss' without timezone, assume UTC
+          saleDateNormalized = saleDateRaw + 'Z';
+          console.debug('posService: normalized backend saleDate (no zone) ->', saleDateRaw, '->', saleDateNormalized);
+        }
+      }
+    } catch (e) {
+      console.warn('posService: error normalizing saleDate:', saleDateRaw, e);
+    }
+
     return {
       id: String(s.id),
       saleCode: s.saleCode || '',
-      saleDate: s.saleDate || '',
+      saleDate: saleDateNormalized || '',
       employeeId: String(s.employeeId ?? s.empleadoId ?? s.employee?.id ?? ''),
       employeeName: (s.employeeName || s.cajero || s.empleado?.nombre || '').trim(),
       items: (s.items || []).map((item: any) => ({
