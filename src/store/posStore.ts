@@ -173,8 +173,8 @@ export const usePOSStore = create<POSStore>()(
 
       // Actions para estadísticas
       updateDailyStats: () => {
-        // Esta función se puede expandir para cargar estadísticas del día
-        // desde el localStorage o el servidor
+        // Resets accumulated totals so they are re-fetched from the server on next load
+        set({ dailyTotal: 0, salesCount: 0 });
       },
     }),
     {

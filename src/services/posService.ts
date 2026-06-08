@@ -9,6 +9,9 @@ export function setAuth0UserName(name: string | null) {
 }
 
 export class POSService {
+  // Caché en memoria de productos con stock calculado
+  private static _productCache: Product[] | null = null;
+
   // Obtener productos para el POS
   static async getProducts(): Promise<Product[]> {
     try {
@@ -59,6 +62,7 @@ export class POSService {
       });
 
       console.log(` POS: ${mappedProducts.length} productos mapeados correctamente:`, mappedProducts);
+      this._productCache = mappedProducts;
       return mappedProducts;
       
     } catch (error) {
@@ -67,6 +71,29 @@ export class POSService {
       // Fallback a productos de muestra para pruebas
       return this.getSampleProducts();
     }
+  }
+
+  // Validar stock del carrito usando el caché de productos (sin llamadas extra al backend)
+  static async validateCartStock(
+    cartItems: { productId: string; productName: string; quantity: number }[]
+  ): Promise<{ isValid: boolean; insufficient: { name: string; requested: number; available: number }[] }> {
+    const products = this._productCache ?? await this.getProducts();
+    const insufficient: { name: string; requested: number; available: number }[] = [];
+
+    for (const item of cartItems) {
+      const product = products.find(p => p.id === item.productId);
+      if (!product) continue; // producto no encontrado — el backend hará la validación final
+      const available = product.stock ?? 0;
+      if (available < item.quantity) {
+        insufficient.push({
+          name: item.productName,
+          requested: item.quantity,
+          available,
+        });
+      }
+    }
+
+    return { isValid: insufficient.length === 0, insufficient };
   }
 
   // Productos de muestra para pruebas del POS

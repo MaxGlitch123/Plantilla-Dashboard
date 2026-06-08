@@ -73,9 +73,8 @@ export const validateStockForOrder = async (items: any[]): Promise<{
       
     } catch (error) {
       console.error('❌ Error al cargar productos manufacturados:', error);
-      console.warn('⚠️ Continuando con validación parcial sin detalles de productos');
-      // Si no podemos cargar los productos, continuamos con un array vacío
-      // Esto permitirá que la función siga funcionando parcialmente
+      // Re-throw so the caller knows validation could not complete
+      throw new Error('No se pudieron cargar las recetas para validar el stock. Intenta de nuevo.');
     }
 
     // Calculamos el consumo total de insumos
@@ -136,16 +135,10 @@ export const validateStockForOrder = async (items: any[]): Promise<{
     console.log('\n🎯 === VERIFICACIÓN DE STOCK ===');
     const insufficientStockItems = [];
     
-    // Si no hay datos de consumo (porque no se pudieron cargar los productos)
+    // Si no hay datos de consumo significa que ningún producto fue encontrado en las recetas
     if (Object.keys(insumoConsumption).length === 0 && products.length === 0) {
       console.warn('⚠️ No hay datos de consumo de insumos. Validación de stock incompleta.');
-      
-      // En este caso, permitimos que continúe la operación pero notificamos al usuario
-      return {
-        isValid: true,
-        insufficientStockItems: [],
-        warning: 'No se pudo realizar la validación completa de stock debido a un error al cargar los datos de productos.'
-      };
+      throw new Error('No se pudo validar el stock: las recetas de los productos no están disponibles.');
     }
     
     for (const [insumoId, cantidadRequerida] of Object.entries(insumoConsumption)) {

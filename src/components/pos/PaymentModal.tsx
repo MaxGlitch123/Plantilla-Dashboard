@@ -4,7 +4,6 @@ import { usePOSStore } from '../../store/posStore';
 import { POSService } from '../../services/posService';
 import { OfflineService } from '../../services/offlineService';
 import { PrinterService } from '../../services/printerService';
-import { validateStockForOrder } from '../../services/stockValidationService';
 import { PaymentDetails, SaleChannel } from '../../types/pos';
 import Button from '../ui/Button';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -72,32 +71,29 @@ export const PaymentModal: React.FC = () => {
       return;
     }
 
-    // Validación de stock de insumos
-    if (isOnline) {
-      try {
-        const stockItems = cart.map(item => ({
-          articuloId: parseInt(item.productId),
-          cantidad: item.quantity,
-        }));
-        const { isValid, insufficientStockItems, warning } = await validateStockForOrder(stockItems);
-        if (!isValid && insufficientStockItems.length > 0) {
-          const detalle = insufficientStockItems
-            .map(i => `• ${i.nombre}: necesitás ${i.stockRequerido} ${i.stockRequerido === 1 ? 'unidad' : 'unidades'}, hay ${i.stockActual}`)
-            .join('\n');
-          setError(`Stock insuficiente para completar la venta:\n${detalle}`);
-          return;
-        }
-        if (warning) setStockWarning(warning);
-      } catch {
-        // El backend no responde (Railway caído, DB sin conexión, timeout)
-        // Se permite continuar pero se avisa al cajero
-        setStockWarning('No se pudo verificar el stock (servidor no disponible). La venta se registrará igual.');
-      }
-    }
-
     setProcessing(true);
 
     try {
+      // Validar stock e inmediatamente crear la venta en el mismo bloque
+      // para eliminar la ventana de race condition entre validación y venta
+      // Validar stock usando el caché local de productos (sin permisos de admin)
+      try {
+        const { isValid, insufficient } = await POSService.validateCartStock(
+          cart.map(item => ({ productId: item.productId, productName: item.productName, quantity: item.quantity }))
+        );
+        if (!isValid) {
+          const detalle = insufficient
+            .map(i => `• ${i.name}: pedís ${i.requested}, hay ${i.available}`)
+            .join('\n');
+          setError(`Stock insuficiente para completar la venta:\n${detalle}`);
+          setProcessing(false);
+          return;
+        }
+      } catch {
+        // Si el caché no está disponible el backend hará la validación final
+        setStockWarning('No se pudo verificar el stock localmente. El servidor hará la validación final.');
+      }
+
       // Crear detalles del pago
       const paymentDetails: PaymentDetails = {
         method: paymentMethod,

@@ -84,7 +84,7 @@ const CashRegisterPage: React.FC = () => {
         if (res.data && res.data.id) {
           setActiveShift(res.data);
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('Shift refresh error:', err); }
     }, 30000);
     return () => clearInterval(interval);
   }, [activeShift?.id]);

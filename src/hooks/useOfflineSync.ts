@@ -48,9 +48,9 @@ export const useOfflineSync = () => {
               const failedSales = JSON.parse(localStorage.getItem('pos-failed-sales') || '[]');
               failedSales.push({ ...sale, failReason: errorMsg, failDate: new Date().toISOString() });
               localStorage.setItem('pos-failed-sales', JSON.stringify(failedSales));
-            } catch (e) { /* ignore storage errors */ }
+            } catch (e) { console.warn('Failed to persist failed sale record:', e); }
           } else {
-            console.error(`❌ Error sincronizando venta ${sale.saleCode} (se reintentará):`, error);
+            console.error(` Error sincronizando venta ${sale.saleCode} (se reintentará):`, error);
           }
         }
       }
