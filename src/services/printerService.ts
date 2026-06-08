@@ -41,7 +41,7 @@ export class PrinterService {
       const ticket = this.generateTicketContent(sale, qrBase64);
       await this.printWithBrowserDialog(ticket);
 
-      console.log(`🖨️ Ticket impreso para venta ${sale.saleCode}` );
+      console.log(` Ticket impreso para venta ${sale.saleCode}` );
       return true;
     } catch (error) {
       console.error('Error printing ticket:', error);
@@ -86,72 +86,59 @@ export class PrinterService {
     body {
       font-family: 'Arial', 'Segoe UI', sans-serif;
       font-size: ${settings.fontSize}px;
-      max-width: 300px;
+      max-width: 400px; /* Agrandamos el contenedor base en pantalla */
       margin: 0 auto;
-      padding: 15px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      padding: 10px;
+      background: #ffffff; /* Fondo blanco liso para simular rollo continuo */
       color: #333;
     }
     
     .ticket-container {
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 20px;
-      border: 1px solid #e9ecef;
+      padding: 10px;
     }
     
     .header {
       text-align: center;
       margin-bottom: 20px;
       padding-bottom: 15px;
-      border-bottom: 2px dashed #4a90e2;
-      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-      color: white;
+      border-bottom: 2px dashed #333; /* Cambiado a negro/gris para ticket continuo */
+      color: #000;
       padding: 15px;
-      border-radius: 8px 8px 0 0;
-      margin: -20px -20px 20px -20px;
     }
     
     .business-name {
-      font-size: ${Math.round(settings.fontSize * 1.6)}px;
+      font-size: ${String(Math.round(settings.fontSize * 1.4)) + 'px'};
       font-weight: bold;
       margin-bottom: 8px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
       letter-spacing: 1px;
     }
     
     .business-info {
-      font-size: ${Math.round(settings.fontSize * 0.85)}px;
+      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
       margin: 3px 0;
-      opacity: 0.95;
     }
     
     .section {
       margin: 20px 0;
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 6px;
-      border-left: 4px solid #4a90e2;
+      padding: 5px 0;
+      border-bottom: 1px dashed #333;
     }
     
     .sale-info {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 8px 0;
-      padding: 5px 0;
-      font-size: ${Math.round(settings.fontSize * 0.95)}px;
+      margin: 6px 0;
+      font-size: ${String(Math.round(settings.fontSize * 0.95)) + 'px'};
     }
     
     .sale-info span:first-child {
-      color: #666;
-      font-weight: 500;
+      color: #555;
     }
     
     .sale-info span:last-child {
       font-weight: bold;
-      color: #333;
     }
     
     .items-section {
@@ -159,34 +146,23 @@ export class PrinterService {
     }
     
     .items-header {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      padding: 12px;
-      border-radius: 6px;
-      text-align: center;
       font-weight: bold;
       margin-bottom: 10px;
-      font-size: ${Math.round(settings.fontSize * 1.1)}px;
+      font-size: ${String(Math.round(settings.fontSize * 1.1)) + 'px'};
+      border-bottom: 1px solid #000;
+      padding-bottom: 5px;
     }
     
     .items-table {
       background: white;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .item-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid #f1f3f4;
-      transition: background-color 0.2s ease;
-    }
-    
-    .item-row:hover {
-      background-color: #f8f9fa;
+      padding: 8px 0;
+      border-bottom: 1px dashed #eee;
     }
     
     .item-row:last-child {
@@ -194,98 +170,65 @@ export class PrinterService {
     }
     
     .item-row.header {
-      background: #e9ecef;
       font-weight: bold;
-      color: #495057;
-      font-size: ${Math.round(settings.fontSize * 0.85)}px;
+      color: #000;
+      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
+      border-bottom: 1px solid #000;
     }
     
     .item-name {
       flex: 2;
-      font-size: ${Math.round(settings.fontSize * 0.9)}px;
-      color: #333;
-      font-weight: 500;
+      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
     }
     
     .item-qty {
       width: 40px;
       text-align: center;
-      font-size: ${Math.round(settings.fontSize * 0.9)}px;
-      background: #e3f2fd;
-      color: #1976d2;
-      border-radius: 4px;
-      padding: 2px 4px;
+      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
       font-weight: bold;
     }
     
     .item-price {
       width: 70px;
       text-align: right;
-      font-size: ${Math.round(settings.fontSize * 0.9)}px;
+      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
       font-weight: bold;
-      color: #28a745;
     }
     
     .totals {
       margin: 20px 0;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
+      padding: 10px 0;
+      border-top: 1px solid #000;
     }
     
     .total-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 8px 0;
-      padding: 5px 0;
-      font-size: ${Math.round(settings.fontSize * 0.95)}px;
-    }
-    
-    .total-row span:first-child {
-      color: #666;
-      font-weight: 500;
-    }
-    
-    .total-row span:last-child {
-      font-weight: bold;
-      color: #333;
+      margin: 6px 0;
+      font-size: ${String(Math.round(settings.fontSize * 0.95)) + 'px'};
     }
     
     .total-final {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white !important;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: ${Math.round(settings.fontSize * 1.2)}px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      padding: 10px 0;
+      font-size: ${String(Math.round(settings.fontSize * 1.2)) + 'px'};
       font-weight: bold;
       margin-top: 10px;
       text-align: center;
-      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-    
-    .total-final span {
-      color: white !important;
     }
     
     .payment-method {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      color: #856404;
-      padding: 8px 12px;
-      border-radius: 4px;
       text-align: center;
       margin-top: 10px;
       font-weight: bold;
+      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
     }
     
     .notes {
-      background: #f8d7da;
-      border: 1px solid #f5c6cb;
-      color: #721c24;
-      padding: 12px;
-      border-radius: 6px;
+      border: 1px solid #000;
+      padding: 10px;
       margin: 15px 0;
       font-style: italic;
     }
@@ -294,41 +237,24 @@ export class PrinterService {
       text-align: center;
       margin-top: 25px;
       padding-top: 20px;
-      border-top: 2px dashed #4a90e2;
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 0 0 8px 8px;
-      margin: 25px -20px -20px -20px;
+      border-top: 2px dashed #333;
     }
     
     .footer-message {
-      font-size: ${Math.round(settings.fontSize * 1.1)}px;
+      font-size: ${String(Math.round(settings.fontSize * 1.0)) + 'px'};
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     
     .footer-website {
-      font-size: ${Math.round(settings.fontSize * 0.85)}px;
-      opacity: 0.9;
+      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
       margin-bottom: 10px;
     }
     
     .footer-timestamp {
-      font-size: ${Math.round(settings.fontSize * 0.75)}px;
-      opacity: 0.8;
+      font-size: ${String(Math.round(settings.fontSize * 0.75)) + 'px'};
       margin-top: 8px;
       padding-top: 8px;
-      border-top: 1px dashed rgba(255,255,255,0.3);
-    }
-    
-    .ticket-animation {
-      animation: fadeIn 0.5s ease-in;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -418,18 +344,18 @@ export class PrinterService {
     ` : ''}
 
 <div class="footer">
-      <div class="footer-message">🙏 ¡Gracias por su compra!</div>
-      <div class="footer-website">🌐 Visite www.cityfast.com</div>
+      <div class="footer-message">Gracias por su compra</div>
+      <div class="footer-website">Visite www.cityfast.com</div>
       
       ${qrData ? `
-      <div style="text-align: center; margin: 15px 0; background: white; padding: 10px; border-radius: 8px; display: inline-block;">
-        <img src="${qrData}" alt="QR Pedido" style="display: block; margin: 0 auto; width: 130px; height: 130px;" />
-        <span style="color: #333; font-size: 11px; font-weight: bold; margin-top: 5px; display: block;">Escanee para ver pedido</span>
+      <div style="text-align: center; margin: 20px 0; background: white; padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid #eee;">
+        <img src="${qrData}" alt="QR Pedido" style="display: block; margin: 0 auto; width: 180px; height: 180px;" />
+        <span style="color: #111; font-size: 13px; font-weight: bold; margin-top: 8px; display: block; letter-spacing: 0.5px;">ESCANEE PARA VER PEDIDO</span>
       </div>
       ` : ''}
-      <div class="footer-message">💖 ¡Esperamos verle pronto!</div>
+      <div class="footer-message">Esperamos verle pronto</div>
       <div class="footer-timestamp">
-        🕒 Generado: ${date.toLocaleString('es-ES')}
+        Generado: ${date.toLocaleString('es-ES')}
       </div>
     </div>
 
