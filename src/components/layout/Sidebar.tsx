@@ -17,6 +17,7 @@ import {
   BarChart2
 } from 'lucide-react';
 import Button from '../ui/Button';
+import { usePOSStore } from '../../store/posStore';
 
 const SIDEBAR_ITEMS = [
   {
@@ -137,7 +138,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
     item => currentUser && item.allowedRoles.includes(currentUser.role)
   );
 
+  const clearCart = usePOSStore(state => state.clearCart);
+
   const handleLogout = () => {
+    clearCart();
     logout({ logoutParams: { returnTo: `${window.location.origin}/login` } });
   };
 

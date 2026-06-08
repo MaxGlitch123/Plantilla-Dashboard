@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { sessionCleanupService } from '../services/SessionCleanupService';
+import { usePOSStore } from '../store/posStore';
 
 interface SessionProblem {
     type : 'not_authenticated' | 'missing_user' | 'auth_error' | 'session_corrupt' | 'invalid_token' | 'storage_inconsistent' | 'manual' ;
@@ -16,6 +17,7 @@ interface SessionProblem {
 const SessionExpiredPage: React.FC = () => {
 
     const { logout, loginWithRedirect, isAuthenticated, isLoading, user, error } = useAuth0();
+    const clearCart = usePOSStore(state => state.clearCart);
     const [countdown, setCountdown] = useState(600); // 600 seconds countdown
     const [autoLogoutEnabled, setAutoLogoutEnabled] = useState(true);
     const [sessionProblem, setSessionProblem] = useState<SessionProblem | null>(null);
@@ -118,6 +120,7 @@ const analyzeSessionProblem = (): SessionProblem => {
 const handleCompleteLogout = async () => {
 
     console.log('🚪 User initiated complete logout');
+    clearCart(); // Limpiar carrito antes de cerrar sesión
 
     try {
       // Usar el SessionCleanupService para limpieza completa
@@ -129,7 +132,7 @@ const handleCompleteLogout = async () => {
         clearCookies: true,
         clearCache: true,
         clearAuth0Storage: true,
-        preserveKeys: ['pos-sales', 'pos-storage', 'pos-last-sale'],
+        preserveKeys: ['pos-sales', 'pos-last-sale'],
         logCleanup: true
       });
 

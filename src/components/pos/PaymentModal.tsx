@@ -83,7 +83,7 @@ export const PaymentModal: React.FC = () => {
         );
         if (!isValid) {
           const detalle = insufficient
-            .map(i => `• ${i.name}: pedís ${i.requested}, hay ${i.available}`)
+            .map(i => `• ${i.name}: Solicita: ${i.requested}, Disponible: ${i.available}`)
             .join('\n');
           setError(`Stock insuficiente para completar la venta:\n${detalle}`);
           setProcessing(false);
