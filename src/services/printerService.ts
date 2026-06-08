@@ -1,4 +1,6 @@
 import { Sale } from '../types/pos';
+// @ts-ignore
+import QRCode from 'qrcode';
 
 export class PrinterService {
   private static readonly PRINTER_SETTINGS_KEY = 'pos-printer-settings';
@@ -12,10 +14,10 @@ export class PrinterService {
     margins: { top: 2, bottom: 3, left: 2, right: 2 },
     enableLogo: false, // Sin logo para matricial
     autocut: false, // Corte manual
-    matrixPrinter: true // Identificar como matricial
+    matrixPrinter: false, // Identificar como matricial
   };
 
-  // Imprimir ticket de venta
+// Imprimir ticket de venta
   static async printSale(sale: Sale): Promise<boolean> {
     try {
       // Método 1: Intentar impresión directa con formato optimizado
@@ -24,16 +26,23 @@ export class PrinterService {
         console.log(`🖨️ Ticket impreso para venta ${sale.saleCode}`);
         return true;
       }
-      
-      // Método 2: Fallback a HTML
-      const ticket = this.generateTicketContent(sale);
+
+      // GENERAR QR NATIVO LOCAL ANTES DEL HTML
+      let qrBase64 = '';
+      try {
+        qrBase64 = await QRCode.toDataURL(`https://www.cityfast.com/pedido/${sale.saleCode || 'cf'}`);
+      } catch (qrError) {
+        console.error('Error generando QR local:', qrError);
+      }
+
+      // Método 2: Fallback a HTML (Le pasamos la imagen QR como parámetro)
+      const ticket = this.generateTicketContent(sale, qrBase64);
       await this.printWithBrowserDialog(ticket);
-      
+
       console.log(`🖨️ Ticket impreso para venta ${sale.saleCode}` );
       return true;
     } catch (error) {
       console.error('Error printing ticket:', error);
-      // Método 3: Crear archivo para impresión manual
       this.createPrintableFile(sale);
       alert('La impresión automática falló. Se creó un archivo para imprimir manualmente.\nRevisa la carpeta de Descargas.');
       return false;
@@ -41,17 +50,14 @@ export class PrinterService {
   }
 
   // Generar contenido del ticket específico para Kretz LEX 850
-  private static generateTicketContent(sale: Sale): string {
+  private static generateTicketContent(sale: Sale, qrData: string): string {
     const date = new Date(sale.saleDate);
     const settings = this.getPrinterSettings();
-    
+
     // Para impresora matricial, usar formato de texto simple optimizado
     if (settings.matrixPrinter) {
       return this.generateMatrixPrinterTicket(sale, date);
-    }
-    
-    // HTML para otras impresoras con diseño mejorado
-    return `
+    } return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -409,8 +415,16 @@ export class PrinterService {
     </div>
     ` : ''}
 
-    <div class="footer">
+<div class="footer">
       <div class="footer-message">🙏 ¡Gracias por su compra!</div>
+      <div class="footer-website">🌐 Visite www.cityfast.com</div>
+      
+      ${qrData ? `
+      <div style="text-align: center; margin: 15px 0; background: white; padding: 10px; border-radius: 8px; display: inline-block;">
+        <img src="${qrData}" alt="QR Pedido" style="display: block; margin: 0 auto; width: 130px; height: 130px;" />
+        <span style="color: #333; font-size: 11px; font-weight: bold; margin-top: 5px; display: block;">Escanee para ver pedido</span>
+      </div>
+      ` : ''}
       <div class="footer-message">💖 ¡Esperamos verle pronto!</div>
       <div class="footer-timestamp">
         🕒 Generado: ${date.toLocaleString('es-ES')}
