@@ -3,6 +3,7 @@ import Layout from '../components/layout/Layout';
 import { Clock, CreditCard, Banknote, ArrowRightLeft, TrendingUp, AlertCircle, CheckCircle, History, Play, Square, Search, Printer, CalendarDays, Users } from 'lucide-react';
 import { POSService } from '../services/posService';
 import apiClient from '../api/apiClient';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface Shift {
   id: number;
@@ -24,6 +25,9 @@ interface Shift {
 }
 
 const CashRegisterPage: React.FC = () => {
+  const rol = useAuthStore(state => state.rol);
+  const isAdmin = rol === 'Admin' || rol === 'admin';
+
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [shiftHistory, setShiftHistory] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +37,7 @@ const CashRegisterPage: React.FC = () => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showHistoryDetail, setShowHistoryDetail] = useState<Shift | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<'current' | 'history' | 'consolidated'>('current');
+  const [tab, setTab] = useState<'current' | 'history' | 'consolidated'>(isAdmin ? 'history' : 'current');
   const [toast, setToast] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState('');
   const [historyDateFilter, setHistoryDateFilter] = useState('');
@@ -237,14 +241,16 @@ const CashRegisterPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Cierre de Caja</h1>
           <div className="flex space-x-2">
-            <button
-              onClick={() => setTab('current')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === 'current' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Play className="inline h-4 w-4 mr-1" /> Turno Actual
-            </button>
+            {!isAdmin && (
+              <button
+                onClick={() => setTab('current')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  tab === 'current' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Play className="inline h-4 w-4 mr-1" /> Turno Actual
+              </button>
+            )}
             <button
               onClick={() => setTab('history')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${

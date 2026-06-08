@@ -61,7 +61,7 @@ const SIDEBAR_ITEMS = [
     label: 'Cierre de Caja',
     icon: <Wallet size={20} />,
     path: '/cash-register',
-    allowedRoles: ['cajero'],
+    allowedRoles: ['cajero', 'admin', 'manager'],
   },
   {
     label: 'Productos',

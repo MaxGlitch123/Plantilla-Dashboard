@@ -306,7 +306,7 @@ const AppRoutes: React.FC = () => {
           path="/cash-register" 
           element={
             <ProtectedRoute 
-              allowedRoles={POS_ROLES}
+              allowedRoles={['cajero', 'admin', 'manager']}
               enableAdvancedGuard={true}
             >
               <CashRegisterPage />
