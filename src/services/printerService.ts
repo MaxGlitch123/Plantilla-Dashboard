@@ -20,12 +20,14 @@ export class PrinterService {
 // Imprimir ticket de venta
   static async printSale(sale: Sale): Promise<boolean> {
     try {
-      // Método 1: Intentar impresión directa con formato optimizado
+      // COMENTAMOS ESTO PARA QUE NO USE EL FORMATO VIEJO DE TEXTO PLANO:
+      /*
       const success = await this.printWithTextFile(sale);
       if (success) {
         console.log(`🖨️ Ticket impreso para venta ${sale.saleCode}`);
         return true;
       }
+      */
 
       // GENERAR QR NATIVO LOCAL ANTES DEL HTML
       let qrBase64 = '';
