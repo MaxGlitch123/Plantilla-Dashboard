@@ -710,10 +710,24 @@ export class POSService {
     try {
       const salesData = localStorage.getItem('pos-sales');
       const sales: Sale[] = salesData ? JSON.parse(salesData) : [];
-      
+
+      // Diagnostic log: show raw saleDate and how Date() parses it in this environment
+      try {
+        const parsed = new Date(sale.saleDate);
+        console.log('💾 Guardando venta localmente:', {
+          saleCode: sale.saleCode,
+          rawSaleDate: sale.saleDate,
+          parsedToString: parsed.toString(),
+          parsedToISOString: isNaN(parsed.getTime()) ? null : parsed.toISOString(),
+          timezoneOffsetMin: isNaN(parsed.getTime()) ? null : parsed.getTimezoneOffset(),
+        });
+      } catch (e) {
+        console.warn('⚠️ Error parsing saleDate for debug log:', sale.saleDate, e);
+      }
+
       sales.push(sale);
       localStorage.setItem('pos-sales', JSON.stringify(sales));
-      
+
       console.log(`💾 Venta ${sale.saleCode} guardada localmente`);
     } catch (error) {
       console.error('Error saving sale locally:', error);
