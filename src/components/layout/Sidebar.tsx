@@ -119,6 +119,8 @@ export const getRoleFromUser = (user: any): string => {
     case 'cliente': return 'client';
     case 'cajero': return 'cajero'; // ✅ Agregado para consistencia
     case 'cajero_control_de_stock': return 'Cajero_Control_de_Stock';
+    case 'cajero y control de stock': return 'Cajero_Control_de_Stock';
+    case 'cajero control de stock': return 'Cajero_Control_de_Stock';
     default: return rawRole.toLowerCase();
   }
 };
