@@ -14,7 +14,32 @@ interface Props {
 
 /* const VITE_AUTH0_AUDIENCE = import.meta.env.VITE_AUTH0_AUDIENCE; */
 
-// 🧠 Mapeo de nombres de roles de Auth0 a los internos del frontend
+// Normalize Auth0 role names to a consistent internal format (lowercase, underscores)
+const mapRole = (raw: string): string => {
+  if (!raw) return String(raw);
+  const upperRole = String(raw).toUpperCase().trim();
+
+  if (upperRole.includes("ADMIN")) return "admin";
+  if (upperRole.includes("COCIN") || upperRole === "CHEF") return "chef";
+  if (upperRole.includes("REPART") || upperRole === "DELIVERY") return "delivery";
+  if (upperRole.includes("CLIENT")) return "client";
+  if (upperRole === "CAJERO") return "cajero";
+
+  // Variants that indicate cashier + stock control
+  if (upperRole.includes("CAJERO") && (upperRole.includes("CONTROL") || upperRole.includes("CONTROL_DE") || upperRole.includes("CONTROLDE"))) {
+    return "cajero_control_de_stock";
+  }
+
+  // Fallback: normalize spaces/underscores and strip non-alnum characters
+  return String(raw)
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .toLowerCase();
+};
+
+
+
+/* old method if new dont work
 const mapRole = (raw: string): string => {
   const upperRole = raw.toUpperCase();
   
@@ -37,6 +62,7 @@ const mapRole = (raw: string): string => {
     default: return raw.toLowerCase();
   }
 };
+*/
 
 export const ProtectedRoute = ({ 
   children, 
