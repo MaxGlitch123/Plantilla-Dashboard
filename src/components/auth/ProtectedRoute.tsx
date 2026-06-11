@@ -32,6 +32,8 @@ const mapRole = (raw: string): string => {
       return "client";
     case "CAJERO":
       return "cajero"; // ✅ Cambiado de "cashier" a "cajero" para coincidir con ALL_ROLES
+    case "CAJERO Y CONTROL DE STOCK":
+      return "Cajero_Control_de_Stock"; // ✅ Agregado para el nuevo rol
     default: return raw.toLowerCase();
   }
 };

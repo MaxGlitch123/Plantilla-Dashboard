@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = [
     label: 'Dashboard',
     icon: <LayoutDashboard size={20} />,
     path: '/dashboard',
-    allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'cajero'],
+    allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'cajero', 'Cajero_Control_de_Stock'],
   },
   {
     label: 'Ventas POS',
@@ -42,26 +42,26 @@ const SIDEBAR_ITEMS = [
     label: 'Punto de Venta',
     icon: <ShoppingCart size={20} />,
     path: '/pos',
-    allowedRoles: ['cajero'],
+    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
   },
   {
     label: 'Mis Ventas',
     icon: <Receipt size={20} />,
     path: '/pos/my-sales',
-    allowedRoles: ['cajero'],
+    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
   },
 
   {
     label: 'Productos POS',
     icon: <ChefHat size={20} />,
     path: '/pos/products',
-    allowedRoles: ['cajero'],
+    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
   },
   {
     label: 'Cierre de Caja',
     icon: <Wallet size={20} />,
     path: '/cash-register',
-    allowedRoles: ['cajero', 'admin', 'manager'],
+    allowedRoles: ['cajero', 'admin', 'manager','Cajero_Control_de_Stock'],
   },
   {
     label: 'Productos',
@@ -73,7 +73,7 @@ const SIDEBAR_ITEMS = [
     label: 'Insumos',
     icon: <Package size={20} />,
     path: '/supplies',
-    allowedRoles: ['admin', 'manager', 'chef'],
+    allowedRoles: ['admin', 'manager', 'chef', 'Cajero_Control_de_Stock'],
   },
   {
     label: 'Promociones',
@@ -118,6 +118,7 @@ export const getRoleFromUser = (user: any): string => {
     case 'chef': return 'chef';
     case 'cliente': return 'client';
     case 'cajero': return 'cajero'; // ✅ Agregado para consistencia
+    case 'cajero_control_de_stock': return 'Cajero_Control_de_Stock';
     default: return rawRole.toLowerCase();
   }
 };
