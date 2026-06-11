@@ -74,6 +74,8 @@ const SIDEBAR_ITEMS = [
     icon: <Package size={20} />,
     path: '/supplies',
     allowedRoles: ['admin', 'manager', 'chef', 'Cajero_Control_de_Stock'],
+    // Only allow this specific user in addition to role-based access
+    allowedUsers: ['sol_cajera@cityfast.com'],
   },
   {
     label: 'Promociones',
@@ -134,12 +136,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
       firstName: user.given_name || user.name?.split(' ')[0] || '',
       lastName: user.family_name || user.name?.split(' ')[1] || '',
       role: getRoleFromUser(user),
+      email: user.email || user?.email || '',
     }
     : null;
 
-  const filteredItems = SIDEBAR_ITEMS.filter(
-    item => currentUser && item.allowedRoles.includes(currentUser.role)
-  );
+  const filteredItems = SIDEBAR_ITEMS.filter((item) => {
+    if (!currentUser) return false;
+    // Allow if role matches
+    if (Array.isArray(item.allowedRoles) && item.allowedRoles.includes(currentUser.role)) return true;
+    // Allow if e-mail is explicitly allowed for this item
+    if (Array.isArray((item as any).allowedUsers) && (item as any).allowedUsers.includes(currentUser.email)) return true;
+    return false;
+  });
 
   const clearCart = usePOSStore(state => state.clearCart);
 
