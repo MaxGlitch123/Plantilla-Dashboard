@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = [
     label: 'Dashboard',
     icon: <LayoutDashboard size={20} />,
     path: '/dashboard',
-    allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'cajero', 'Cajero_Control_de_Stock'],
+    allowedRoles: ['admin', 'manager', 'employee', 'delivery', 'cajero', 'cajero_control_de_stock'],
   },
   {
     label: 'Ventas POS',
@@ -42,26 +42,26 @@ const SIDEBAR_ITEMS = [
     label: 'Punto de Venta',
     icon: <ShoppingCart size={20} />,
     path: '/pos',
-    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
+    allowedRoles: ['cajero', 'cajero_control_de_stock'],
   },
   {
     label: 'Mis Ventas',
     icon: <Receipt size={20} />,
     path: '/pos/my-sales',
-    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
+    allowedRoles: ['cajero', 'cajero_control_de_stock'],
   },
 
   {
     label: 'Productos POS',
     icon: <ChefHat size={20} />,
     path: '/pos/products',
-    allowedRoles: ['cajero', 'Cajero_Control_de_Stock'],
+    allowedRoles: ['cajero', 'cajero_control_de_stock'],
   },
   {
     label: 'Cierre de Caja',
     icon: <Wallet size={20} />,
     path: '/cash-register',
-    allowedRoles: ['cajero', 'admin', 'manager','Cajero_Control_de_Stock'],
+    allowedRoles: ['cajero', 'admin', 'manager','cajero_control_de_stock'],
   },
   {
     label: 'Productos',
@@ -73,7 +73,7 @@ const SIDEBAR_ITEMS = [
     label: 'Insumos',
     icon: <Package size={20} />,
     path: '/supplies',
-    allowedRoles: ['admin', 'manager', 'chef', 'Cajero_Control_de_Stock'],
+    allowedRoles: ['admin', 'manager', 'chef', 'cajero_control_de_stock'],
     // Only allow this specific user in addition to role-based access
     allowedUsers: ['sol_cajera@cityfast.com'],
   },
@@ -120,9 +120,9 @@ export const getRoleFromUser = (user: any): string => {
     case 'chef': return 'chef';
     case 'cliente': return 'client';
     case 'cajero': return 'cajero'; // ✅ Agregado para consistencia
-    case 'cajero_control_de_stock': return 'Cajero_Control_de_Stock';
-    case 'cajero y control de stock': return 'Cajero_Control_de_Stock';
-    case 'cajero control de stock': return 'Cajero_Control_de_Stock';
+    case 'cajero_control_de_stock': return 'cajero_control_de_stock';
+    case 'cajero y control de stock': return 'cajero_control_de_stock';
+    case 'cajero control de stock': return 'cajero_control_de_stock';
     default: return rawRole.toLowerCase();
   }
 };
