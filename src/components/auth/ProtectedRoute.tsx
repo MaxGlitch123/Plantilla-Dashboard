@@ -23,12 +23,12 @@ const mapRole = (raw: string): string => {
   if (upperRole.includes("COCIN") || upperRole === "CHEF") return "chef";
   if (upperRole.includes("REPART") || upperRole === "DELIVERY") return "delivery";
   if (upperRole.includes("CLIENT")) return "client";
-  if (upperRole === "CAJERO") return "cajero";
-
-  // Variants that indicate cashier + stock control
-  if (upperRole.includes("CAJERO") && (upperRole.includes("CONTROL") || upperRole.includes("CONTROL_DE") || upperRole.includes("CONTROLDE"))) {
+  // Variants that indicate cashier + stock control (check first)
+  if (upperRole.includes("CAJERO") && upperRole.includes("CONTROL")) {
     return "cajero_control_de_stock";
   }
+
+  if (upperRole === "CAJERO") return "cajero";
 
   // Fallback: normalize spaces/underscores and strip non-alnum characters
   return String(raw)
