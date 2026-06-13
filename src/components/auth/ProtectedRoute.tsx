@@ -58,7 +58,7 @@ const mapRole = (raw: string): string => {
     case "CAJERO":
       return "cajero"; // ✅ Cambiado de "cashier" a "cajero" para coincidir con ALL_ROLES
     case "CAJERO Y CONTROL DE STOCK":
-      return "Cajero_Control_de_Stock"; // ✅ Agregado para el nuevo rol
+      return "cajero_control_de_stock"; // ✅ Agregado para el nuevo rol
     default: return raw.toLowerCase();
   }
 };
@@ -154,23 +154,28 @@ export const ProtectedRoute = ({
   // Role validation logic
   const validateRoleAccess = (): { canAccess: boolean; redirectTo?: string; reason?: string } => {
     // Basic role validation
-    const role = getRoleFromUser(user);
+    const roleFromHelper = getRoleFromUser(user);
 
-    if (role === 'guest') {
+    // If helper reports guest, redirect to no-role page
+    if (roleFromHelper === 'guest') {
       return { canAccess: false, redirectTo: '/no-role', reason: 'guest_role' };
     }
 
-    // Validaciones defensivas
+    // Defensive: ensure allowedRoles array is valid
     if (!allowedRoles || !Array.isArray(allowedRoles)) {
       return { canAccess: false, redirectTo: '/dashboard', reason: 'invalid_config' };
     }
 
-    // Detectar si es un cliente intentando acceder a área administrativa
-    if (userRole === 'client' && !allowedRoles.includes('client')) {
+    // Normalize allowed roles to the same mapped form as `userRole` for comparison
+    const normalizedAllowed = allowedRoles.map((r) => mapRole(String(r)));
+
+    // Detect client trying to access admin area
+    if (userRole === 'client' && !normalizedAllowed.includes('client')) {
       return { canAccess: false, redirectTo: '/client-access-denied', reason: 'client_admin_access' };
     }
 
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    // Final check: userRole must be present and included in normalized allowed roles
+    if (!userRole || !normalizedAllowed.includes(userRole)) {
       return { canAccess: false, redirectTo: '/dashboard', reason: 'insufficient_role' };
     }
 
