@@ -110,20 +110,35 @@ export const getRoleFromUser = (user: any): string => {
 
   if (!roleList.length) return 'guest';
 
-  const rawRole = roleList[0];
-  if (typeof rawRole !== 'string') return 'guest';
+  // Normalize role strings to uppercase for consistent checks
+  const normalized = roleList
+    .filter(r => typeof r === 'string')
+    .map(r => String(r).toUpperCase().trim());
 
-  switch (rawRole.toLowerCase()) {
+  if (!normalized.length) return 'guest';
+
+  // If any role indicates cashier + stock control, prefer that
+  if (normalized.some(r => r.includes('CAJERO') && r.includes('CONTROL'))) {
+    return 'cajero_control_de_stock';
+  }
+
+  // If any role is plain cashier, use that
+  if (normalized.some(r => r === 'CAJERO')) {
+    return 'cajero';
+  }
+
+  // Fallback mapping based on known keywords
+  const first = normalized[0].toLowerCase();
+  switch (first) {
     case 'admin': return 'admin';
     case 'empleado': return 'employee';
     case 'repartidor': return 'delivery';
     case 'chef': return 'chef';
     case 'cliente': return 'client';
-    case 'cajero': return 'cajero'; // ✅ Agregado para consistencia
     case 'cajero_control_de_stock': return 'cajero_control_de_stock';
     case 'cajero y control de stock': return 'cajero_control_de_stock';
     case 'cajero control de stock': return 'cajero_control_de_stock';
-    default: return rawRole.toLowerCase();
+    default: return first;
   }
 };
 
