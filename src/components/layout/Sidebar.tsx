@@ -140,6 +140,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
     }
     : null;
 
+  // Debug: show resolved current user and raw user object to diagnose role issues
+  try {
+    // eslint-disable-next-line no-console
+    console.log('Sidebar debug currentUser:', { currentUser, rawUser: isAuthenticated ? user : null });
+  } catch (e) {
+    // ignore
+  }
+
   const filteredItems = SIDEBAR_ITEMS.filter((item) => {
     if (!currentUser) return false;
     // Allow if role matches

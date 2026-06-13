@@ -169,6 +169,16 @@ export const ProtectedRoute = ({
     // Normalize allowed roles to the same mapped form as `userRole` for comparison
     const normalizedAllowed = allowedRoles.map((r) => mapRole(String(r)));
 
+    // Debug log to inspect why access may be denied
+    try {
+      // eslint-disable-next-line no-console
+      console.log('ProtectedRoute debug:', { user: user || null, userRole, roleFromHelper, allowedRoles, normalizedAllowed });
+    } catch (e) {
+      // ignore logging errors
+    }
+
+    // Normalize allowed roles to the same mapped form as `userRole` for comparison
+
     // Detect client trying to access admin area
     if (userRole === 'client' && !normalizedAllowed.includes('client')) {
       return { canAccess: false, redirectTo: '/client-access-denied', reason: 'client_admin_access' };
