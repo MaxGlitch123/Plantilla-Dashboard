@@ -3,63 +3,52 @@ import { Sale } from '../types/pos';
 import QRCode from 'qrcode';
 
 export class PrinterService {
-  private static readonly PRINTER_SETTINGS_KEY = 'pos-printer-settings';
+    private static readonly PRINTER_SETTINGS_KEY = 'pos-printer-settings';
 
-  // Configuración específica para Kretz LEX 850 USE
-  private static defaultSettings = {
-    printerName: 'Kretz LEX 850',
-    paperWidth: 80, // caracteres (impresora matricial)
-    fontSize: 20, // Tamaño grande legible para producción
-    lineSpacing: 1.2, // Espaciado cómodo
-    margins: { top: 2, bottom: 3, left: 2, right: 2 },
-    enableLogo: false, // Sin logo para matricial
-    autocut: false, // Corte manual
-    matrixPrinter: false, // Identificar como matricial
-  };
+    private static defaultSettings = {
+        printerName: 'Kretz LEX 850',
+        paperWidth: 80,
+        fontSize: 14, // Reducido para que entre bien en 80mm
+        lineSpacing: 1.4,
+        margins: { top: 2, bottom: 3, left: 2, right: 2 },
+        enableLogo: false,
+        autocut: false,
+        matrixPrinter: false,
+    };
 
-// Imprimir ticket de venta
-  static async printSale(sale: Sale): Promise<boolean> {
-    try {
-      // COMENTAMOS ESTO PARA QUE NO USE EL FORMATO VIEJO DE TEXTO PLANO:
-      /*
-      const success = await this.printWithTextFile(sale);
-      if (success) {
-        console.log(`🖨️ Ticket impreso para venta ${sale.saleCode}`);
-        return true;
-      }
-      */
+    static async printSale(sale: Sale): Promise<boolean> {
+        try {
+            let qrBase64 = '';
+            try {
+                qrBase64 = await QRCode.toDataURL(`https://www.cityfast.com/pedido/${sale.saleCode || 'cf'}`);
+            } catch (qrError) {
+                console.error('Error generando QR local:', qrError);
+            }
 
-      // GENERAR QR NATIVO LOCAL ANTES DEL HTML
-      let qrBase64 = '';
-      try {
-        qrBase64 = await QRCode.toDataURL(`https://www.cityfast.com/pedido/${sale.saleCode || 'cf'}`);
-      } catch (qrError) {
-        console.error('Error generando QR local:', qrError);
-      }
+            const ticket = this.generateTicketContent(sale, qrBase64);
+            await this.printWithBrowserDialog(ticket);
 
-      // Método 2: Fallback a HTML (Le pasamos la imagen QR como parámetro)
-      const ticket = this.generateTicketContent(sale, qrBase64);
-      await this.printWithBrowserDialog(ticket);
-
-      console.log(` Ticket impreso para venta ${sale.saleCode}` );
-      return true;
-    } catch (error) {
-      console.error('Error printing ticket:', error);
-      this.createPrintableFile(sale);
-      alert('La impresión automática falló. Se creó un archivo para imprimir manualmente.\nRevisa la carpeta de Descargas.');
-      return false;
+            console.log(`Ticket impreso para venta ${sale.saleCode}`);
+            return true;
+        } catch (error) {
+            console.error('Error printing ticket:', error);
+            this.createPrintableFile(sale);
+            alert('La impresión automática falló. Se creó un archivo para imprimir manualmente.\nRevisa la carpeta de Descargas.');
+            return false;
+        }
     }
-  }
 
-  // Generar contenido del ticket específico para Kretz LEX 850
-  private static generateTicketContent(sale: Sale, qrData: string): string {
-    const date = new Date(sale.saleDate);
-    const settings = this.getPrinterSettings();
+    private static generateTicketContent(sale: Sale, qrData: string): string {
+        const date = new Date(sale.saleDate);
+        const settings = this.getPrinterSettings();
 
-    // Para impresora matricial, usar formato de texto simple optimizado
-    if (settings.matrixPrinter) {
-      return this.generateMatrixPrinterTicket(sale, date);
-    } return `
+        if (settings.matrixPrinter) {
+            return this.generateMatrixPrinterTicket(sale, date);
+        }
+
+        const fs = settings.fontSize; // alias corto
+
+        return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -67,602 +56,505 @@ export class PrinterService {
   <title>Ticket - ${sale.saleCode}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     @media print {
       @page {
         size: 80mm auto;
-        margin: 0;
+        margin: 4mm 2mm;
       }
-      body { 
-        margin: 0; 
-        font-family: 'Arial', 'Segoe UI', sans-serif;
-        font-size: ${settings.fontSize}px;
+      body {
+        margin: 0;
+        font-family: 'Arial', sans-serif;
+        font-size: ${fs}px;
         line-height: 1.4;
         background: white;
+        color: #000;
+        width: 72mm; /* margen interno de seguridad */
       }
       .no-print { display: none !important; }
     }
-    
+
     body {
-      font-family: 'Arial', 'Segoe UI', sans-serif;
-      font-size: ${settings.fontSize}px;
-      max-width: 400px; /* Agrandamos el contenedor base en pantalla */
+      font-family: 'Arial', sans-serif;
+      font-size: ${fs}px;
+      max-width: 72mm;
       margin: 0 auto;
-      padding: 10px;
-      background: #ffffff; /* Fondo blanco liso para simular rollo continuo */
-      color: #333;
+      padding: 4px;
+      background: white;
+      color: #000;
     }
-    
+
     .ticket-container {
       background: white;
-      padding: 10px;
+      width: 100%;
     }
-    
+
+    /* ENCABEZADO */
     .header {
       text-align: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px dashed #333; /* Cambiado a negro/gris para ticket continuo */
-      color: #000;
-      padding: 15px;
+      padding-bottom: 6px;
+      border-bottom: 2px dashed #000;
+      margin-bottom: 6px;
     }
-    
+
     .business-name {
-      font-size: ${String(Math.round(settings.fontSize * 1.4)) + 'px'};
+      font-size: ${fs + 4}px;
       font-weight: bold;
-      margin-bottom: 8px;
       letter-spacing: 1px;
+      margin-bottom: 2px;
     }
-    
-    .business-info {
-      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
-      margin: 3px 0;
+
+    .business-subtitle {
+      font-size: ${fs - 1}px;
     }
-    
+
+    /* SECCIÓN FECHA/CAJERO */
     .section {
-      margin: 20px 0;
-      padding: 5px 0;
-      border-bottom: 1px dashed #333;
+      margin: 6px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #000;
     }
-    
+
     .sale-info {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin: 6px 0;
-      font-size: ${String(Math.round(settings.fontSize * 0.95)) + 'px'};
+      margin: 3px 0;
+      font-size: ${fs - 1}px;
     }
-    
-    .sale-info span:first-child {
-      color: #555;
-    }
-    
-    .sale-info span:last-child {
-      font-weight: bold;
-    }
-    
-    .items-section {
-      margin: 20px 0;
-    }
-    
+
+    .sale-info span:first-child { color: #444; }
+    .sale-info span:last-child  { font-weight: bold; }
+
+    /* ITEMS */
+    .items-section { margin: 6px 0; }
+
     .items-header {
       font-weight: bold;
-      margin-bottom: 10px;
-      font-size: ${String(Math.round(settings.fontSize * 1.1)) + 'px'};
+      font-size: ${fs}px;
       border-bottom: 1px solid #000;
-      padding-bottom: 5px;
+      padding-bottom: 3px;
+      margin-bottom: 4px;
     }
-    
-    .items-table {
-      background: white;
-    }
-    
+
     .item-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px dashed #eee;
+      padding: 3px 0;
+      border-bottom: 1px dashed #ccc;
+      font-size: ${fs - 1}px;
     }
-    
-    .item-row:last-child {
-      border-bottom: none;
-    }
-    
+
+    .item-row:last-child { border-bottom: none; }
+
     .item-row.header {
       font-weight: bold;
+      font-size: ${fs - 2}px;
       color: #000;
-      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
       border-bottom: 1px solid #000;
     }
-    
-    .item-name {
-      flex: 2;
-      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
-    }
-    
-    .item-qty {
-      width: 40px;
-      text-align: center;
-      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
-      font-weight: bold;
-    }
-    
-    .item-price {
-      width: 70px;
-      text-align: right;
-      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
-      font-weight: bold;
-    }
-    
+
+    .item-name { flex: 2; }
+    .item-qty  { width: 30px; text-align: center; font-weight: bold; }
+    .item-price{ width: 60px; text-align: right;  font-weight: bold; }
+
+    /* TOTALES */
     .totals {
-      margin: 20px 0;
-      padding: 10px 0;
+      margin: 6px 0;
+      padding-top: 4px;
       border-top: 1px solid #000;
     }
-    
+
     .total-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin: 6px 0;
-      font-size: ${String(Math.round(settings.fontSize * 0.95)) + 'px'};
+      margin: 3px 0;
+      font-size: ${fs - 1}px;
     }
-    
+
     .total-final {
       border-top: 2px solid #000;
       border-bottom: 2px solid #000;
-      padding: 10px 0;
-      font-size: ${String(Math.round(settings.fontSize * 1.2)) + 'px'};
+      padding: 5px 0;
+      font-size: ${fs + 2}px;
       font-weight: bold;
-      margin-top: 10px;
+      margin-top: 5px;
       text-align: center;
     }
-    
+
     .payment-method {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 4px;
       font-weight: bold;
-      font-size: ${String(Math.round(settings.fontSize * 0.9)) + 'px'};
+      font-size: ${fs - 1}px;
     }
-    
+
+    /* NOTAS */
     .notes {
       border: 1px solid #000;
-      padding: 10px;
-      margin: 15px 0;
+      padding: 5px;
+      margin: 6px 0;
       font-style: italic;
+      font-size: ${fs - 1}px;
     }
-    
+
+    /* PIE */
     .footer {
       text-align: center;
-      margin-top: 25px;
-      padding-top: 20px;
-      border-top: 2px dashed #333;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 2px dashed #000;
     }
-    
+
     .footer-message {
-      font-size: ${String(Math.round(settings.fontSize * 1.0)) + 'px'};
+      font-size: ${fs}px;
       font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .footer-website {
+      font-size: ${fs - 2}px;
       margin-bottom: 6px;
     }
-    
-    .footer-website {
-      font-size: ${String(Math.round(settings.fontSize * 0.85)) + 'px'};
-      margin-bottom: 10px;
-    }
-    
+
     .footer-timestamp {
-      font-size: ${String(Math.round(settings.fontSize * 0.75)) + 'px'};
-      margin-top: 8px;
-      padding-top: 8px;
+      font-size: ${fs - 3}px;
+      margin-top: 4px;
+      color: #555;
+    }
+
+    .qr-block {
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .qr-block img {
+      width: 120px;
+      height: 120px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .qr-label {
+      font-size: ${fs - 3}px;
+      font-weight: bold;
+      margin-top: 4px;
+      letter-spacing: 0.3px;
     }
   </style>
 </head>
 <body>
-  <div class="ticket-container ticket-animation">
+  <div class="ticket-container">
+
+    <!-- ENCABEZADO -->
     <div class="header">
-      <div class="business-name">🍴 City Fast</div>
-      <div class="business-info">🏠 Restaurant & Delivery Premium</div>
-      <div class="business-info">📞 Tel: (123) 456-7890</div>
-      <div class="business-info">📧 delivery@cityfast.com</div>
+      <div class="business-name">City Fast</div>
+      <div class="business-subtitle">Restaurant &amp; Delivery</div>
     </div>
 
+    <!-- FECHA / CAJERO -->
     <div class="section">
       <div class="sale-info">
-        <span>📅 Fecha:</span>
-        <span>${date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <span>Fecha:</span>
+        <span>${date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
       </div>
       <div class="sale-info">
-        <span>🕰️ Hora:</span>
-        <span>${date.toLocaleTimeString('es-ES')}</span>
+        <span>Hora:</span>
+        <span>${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
       <div class="sale-info">
-        <span>👨‍💼 Cajero:</span>
+        <span>Cajero:</span>
         <span>${sale.employeeName}</span>
       </div>
       ${sale.customerName ? `
       <div class="sale-info">
-        <span>👤 Cliente:</span>
+        <span>Cliente:</span>
         <span>${sale.customerName}</span>
-      </div>
-      ` : ''}
+      </div>` : ''}
     </div>
 
+    <!-- PRODUCTOS -->
     <div class="items-section">
-      <div class="items-header">
-        📋 Detalle de Productos
+      <div class="items-header">Detalle del pedido</div>
+      <div class="item-row header">
+        <div class="item-name">Producto</div>
+        <div class="item-qty">Cant</div>
+        <div class="item-price">Total</div>
       </div>
-      
-      <div class="items-table">
-        <div class="item-row header">
-          <div class="item-name">Producto</div>
-          <div class="item-qty">Cant</div>
-          <div class="item-price">Total</div>
-        </div>
-        ${sale.items.map(item => `
-        <div class="item-row">
-          <div class="item-name">${item.productName}</div>
-          <div class="item-qty">${item.quantity}</div>
-          <div class="item-price">$${(item.price * item.quantity).toLocaleString('es-ES', {minimumFractionDigits: 2})}</div>
-        </div>
-        `).join('')}
-      </div>
+      ${sale.items.map(item => `
+      <div class="item-row">
+        <div class="item-name">${item.productName}</div>
+        <div class="item-qty">${item.quantity}</div>
+        <div class="item-price">$${(item.price * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+      </div>`).join('')}
     </div>
 
+    <!-- TOTALES -->
     <div class="totals">
       <div class="total-row">
-        <span>📈 Subtotal:</span>
-        <span>$${sale.subtotal.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
+        <span>Subtotal:</span>
+        <span>$${sale.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
       </div>
       ${sale.tax > 0 ? `
       <div class="total-row">
-        <span>📊 IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):</span>
-        <span>$${sale.tax.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
-      </div>
-      ` : ''}
+        <span>IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):</span>
+        <span>$${sale.tax.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+      </div>` : ''}
       ${sale.discount > 0 ? `
       <div class="total-row">
-        <span>🎁 Descuento:</span>
-        <span style="color: #dc3545;">-$${sale.discount.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
-      </div>
-      ` : ''}
-      
+        <span>Descuento:</span>
+        <span>-$${sale.discount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+      </div>` : ''}
+
       <div class="total-final">
-        <span>💰 TOTAL A PAGAR: $${sale.total.toLocaleString('es-ES', {minimumFractionDigits: 2})}</span>
+        TOTAL: $${sale.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
       </div>
-      
+
       <div class="payment-method">
-        💳 Método de pago: ${this.getPaymentMethodText(sale.paymentMethod)}
+        Pago: ${this.getPaymentMethodText(sale.paymentMethod)}
       </div>
     </div>
 
+    <!-- NOTAS -->
     ${sale.notes ? `
     <div class="notes">
-      <strong>📝 Notas:</strong><br>
-      ${sale.notes}
-    </div>
-    ` : ''}
+      <strong>Notas:</strong><br>${sale.notes}
+    </div>` : ''}
 
-<div class="footer">
+    <!-- PIE -->
+    <div class="footer">
       <div class="footer-message">Gracias por su compra</div>
-      <div class="footer-website">Visite www.cityfast.com</div>
-      
+      <div class="footer-website">www.cityfast.com</div>
+
       ${qrData ? `
-      <div style="text-align: center; margin: 20px 0; background: white; padding: 15px; border-radius: 10px; display: inline-block; border: 1px solid #eee;">
-        <img src="${qrData}" alt="QR Pedido" style="display: block; margin: 0 auto; width: 180px; height: 180px;" />
-        <span style="color: #111; font-size: 13px; font-weight: bold; margin-top: 8px; display: block; letter-spacing: 0.5px;">ESCANEE PARA VER PEDIDO</span>
-      </div>
-      ` : ''}
+      <div class="qr-block">
+        <img src="${qrData}" alt="QR Pedido" />
+        <div class="qr-label">Escanee para ver su pedido</div>
+      </div>` : ''}
+
       <div class="footer-message">Esperamos verle pronto</div>
-      <div class="footer-timestamp">
-        Generado: ${date.toLocaleString('es-ES')}
-      </div>
+      <div class="footer-timestamp">${date.toLocaleString('es-AR')}</div>
     </div>
 
   </div>
 
   <script>
-    // Auto imprimir al cargar
-    window.onload = function() {
-      // Pequeña animación antes de imprimir
-      setTimeout(function() {
+    window.onload = function () {
+      setTimeout(function () {
         window.print();
-        // Cerrar ventana después de imprimir
-        setTimeout(function() {
-          window.close();
-        }, 1500);
-      }, 800);
+        setTimeout(function () { window.close(); }, 1500);
+      }, 600);
     };
   </script>
 </body>
-</html>
-    `;
-  }
+</html>`;
+    }
 
-  // Generar ticket optimizado para impresora matricial Kretz LEX 850
-  private static generateMatrixPrinterTicket(sale: Sale, date: Date): string {
-    const line = '='.repeat(48); // 48 caracteres para papel 80 columnas
-    const separator = '-'.repeat(48);
-    
-    let ticket = '';
-    
-    // Encabezado centrado
-    ticket += this.centerText('CITY FAST', 48) + '\n';
-    ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
-    ticket += this.centerText('Tel: (123) 456-7890', 48) + '\n';
-    ticket += line + '\n\n';
-    
-    // Información de la venta
-    ticket += `Fecha: ${date.toLocaleDateString().padEnd(22)} ${date.toLocaleTimeString()}\n`;
-    ticket += `Cajero: ${sale.employeeName}\n`;
-    if (sale.customerName) {
-      ticket += `Cliente: ${sale.customerName}\n`;
-    }
-    ticket += separator + '\n';
-    
-    // Productos
-    ticket += 'Producto                      Cant   Total\n';
-    ticket += separator + '\n';
-    
-    sale.items.forEach(item => {
-      const name = item.productName.length > 25 
-        ? item.productName.substring(0, 25) 
-        : item.productName.padEnd(25);
-      const quantity = item.quantity.toString().padStart(4);
-      const total = `$${(item.price * item.quantity).toFixed(2)}`.padStart(8);
-      ticket += `${name} ${quantity} ${total}\n`;
-    });
-    
-    ticket += separator + '\n';
-    
-    // Totales
-    ticket += `${'Subtotal:'.padEnd(33)} $${sale.subtotal.toFixed(2).padStart(8)}\n`;
-    if (sale.tax > 0) {
-      const ivaLabel = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
-      ticket += `${ivaLabel.padEnd(33)} $${sale.tax.toFixed(2).padStart(8)}\n`;
-    }
-    
-    if (sale.discount > 0) {
-      ticket += `${'Descuento:'.padEnd(33)} -$${sale.discount.toFixed(2).padStart(7)}\n`;
-    }
-    
-    ticket += line + '\n';
-    ticket += `${'TOTAL:'.padEnd(33)} $${sale.total.toFixed(2).padStart(8)}\n`;
-    ticket += `${'Pago:'.padEnd(33)} ${this.getPaymentMethodText(sale.paymentMethod).padStart(9)}\n`;
-    ticket += line + '\n\n';
-    
-    // Notas
-    if (sale.notes) {
-      ticket += 'Notas:\n';
-      ticket += sale.notes + '\n\n';
-    }
-    
-    // Pie de página
-    ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    ticket += this.centerText(date.toLocaleString(), 48) + '\n';
-    
-    // Saltos de línea finales para corte de papel
-    ticket += '\n\n\n\n';
-    
-    // Para matricial, envolver en HTML mínimo
-    return `
+    // ── Matricial (sin cambios de lógica, solo se quitaron emojis) ────────────
+    private static generateMatrixPrinterTicket(sale: Sale, date: Date): string {
+        const line      = '='.repeat(48);
+        const separator = '-'.repeat(48);
+        let ticket = '';
+
+        ticket += this.centerText('CITY FAST', 48) + '\n';
+        ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
+        ticket += line + '\n\n';
+
+        ticket += `Fecha:  ${date.toLocaleDateString('es-AR')} ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}\n`;
+        ticket += `Cajero: ${sale.employeeName}\n`;
+        if (sale.customerName) ticket += `Cliente: ${sale.customerName}\n`;
+        ticket += separator + '\n';
+
+        ticket += 'Producto                      Cant   Total\n';
+        ticket += separator + '\n';
+
+        sale.items.forEach(item => {
+            const name  = item.productName.length > 25
+                ? item.productName.substring(0, 25)
+                : item.productName.padEnd(25);
+            const qty   = item.quantity.toString().padStart(4);
+            const total = `$${(item.price * item.quantity).toFixed(2)}`.padStart(8);
+            ticket += `${name} ${qty} ${total}\n`;
+        });
+
+        ticket += separator + '\n';
+        ticket += `${'Subtotal:'.padEnd(33)} $${sale.subtotal.toFixed(2).padStart(8)}\n`;
+
+        if (sale.tax > 0) {
+            const label = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
+            ticket += `${label.padEnd(33)} $${sale.tax.toFixed(2).padStart(8)}\n`;
+        }
+        if (sale.discount > 0) {
+            ticket += `${'Descuento:'.padEnd(33)} -$${sale.discount.toFixed(2).padStart(7)}\n`;
+        }
+
+        ticket += line + '\n';
+        ticket += `${'TOTAL:'.padEnd(33)} $${sale.total.toFixed(2).padStart(8)}\n`;
+        ticket += `${'Pago:'.padEnd(33)} ${this.getPaymentMethodText(sale.paymentMethod).padStart(9)}\n`;
+        ticket += line + '\n\n';
+
+        if (sale.notes) {
+            ticket += 'Notas:\n' + sale.notes + '\n\n';
+        }
+
+        ticket += this.centerText('Gracias por su compra', 48) + '\n';
+        ticket += this.centerText(date.toLocaleString('es-AR'), 48) + '\n';
+        ticket += '\n\n\n\n';
+
+        return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <style>
-    @media print {
-      @page { size: auto; margin: 0; }
-      body { margin: 0; font-family: 'Arial', sans-serif; font-size: 20px; line-height: 1.4; }
-    }
-    body { font-family: 'Arial', sans-serif; font-size: 20px; white-space: pre; line-height: 1.4; }
+    @media print { @page { size: auto; margin: 0; } body { margin: 0; } }
+    body { font-family: 'Arial', sans-serif; font-size: 14px; white-space: pre; line-height: 1.4; }
   </style>
 </head>
 <body>${ticket}</body>
 </html>`;
-  }
+    }
 
-  // Centrar texto para impresora matricial
-  private static centerText(text: string, width: number): string {
-    const padding = Math.max(0, Math.floor((width - text.length) / 2));
-    return ' '.repeat(padding) + text;
-  }
+    private static centerText(text: string, width: number): string {
+        const padding = Math.max(0, Math.floor((width - text.length) / 2));
+        return ' '.repeat(padding) + text;
+    }
 
-  // Método optimizado: Crear archivo de texto para Kretz LEX 850
-  private static async printWithTextFile(sale: Sale): Promise<boolean> {
-    try {
-      const textContent = this.generatePlainTextTicket(sale);
-      
-      // Crear blob de texto plano
-      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      
-      // Crear iframe para impresión
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      
-      // Escribir contenido como texto plano
-      iframe.onload = function() {
-        const doc = iframe.contentDocument;
-        if (doc) {
-          doc.open();
-          doc.write(`<html><head><style>
-            body { font-family: 'Arial', sans-serif; font-size: 20px; white-space: pre; margin: 0; line-height: 1.4; }
+    private static async printWithTextFile(sale: Sale): Promise<boolean> {
+        try {
+            const textContent = this.generatePlainTextTicket(sale);
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            iframe.onload = function () {
+                const doc = iframe.contentDocument;
+                if (doc) {
+                    doc.open();
+                    doc.write(`<html><head><style>
+            body { font-family: 'Arial', sans-serif; font-size: 14px; white-space: pre; margin: 0; line-height: 1.4; }
             @media print { @page { size: auto; margin: 2mm; } }
           </style></head><body>${textContent}</body></html>`);
-          doc.close();
-          iframe.contentWindow?.print();
+                    doc.close();
+                    iframe.contentWindow?.print();
+                }
+                setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+            };
+
+            iframe.src = 'about:blank';
+            return true;
+        } catch (error) {
+            console.error('Error with text file printing:', error);
+            return false;
         }
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(url);
-        }, 2000);
-      };
-      
-      iframe.src = 'about:blank';
-      return true;
-    } catch (error) {
-      console.error('Error with text file printing:', error);
-      return false;
     }
-  }
 
-  // Generar ticket en texto plano puro para Kretz LEX 850
-  private static generatePlainTextTicket(sale: Sale): string {
-    const date = new Date(sale.saleDate);
-    const line = '='.repeat(48);
-    const separator = '-'.repeat(48);
-    
-    let ticket = '';
-    
-    // Encabezado
-    ticket += this.centerText('CITY FAST', 48) + '\n';
-    ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
-    ticket += this.centerText('Tel: (123) 456-7890', 48) + '\n';
-    ticket += line + '\n\n';
-    
-    // Info de venta
-    ticket += `Fecha: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n`;
-    ticket += `Cajero: ${sale.employeeName}\n`;
-    if (sale.customerName) {
-      ticket += `Cliente: ${sale.customerName}\n`;
+    private static generatePlainTextTicket(sale: Sale): string {
+        const date      = new Date(sale.saleDate);
+        const line      = '='.repeat(48);
+        const separator = '-'.repeat(48);
+        let ticket = '';
+
+        ticket += this.centerText('CITY FAST', 48) + '\n';
+        ticket += this.centerText('Restaurant & Delivery', 48) + '\n';
+        ticket += line + '\n\n';
+
+        ticket += `Fecha:  ${date.toLocaleDateString('es-AR')} ${date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}\n`;
+        ticket += `Cajero: ${sale.employeeName}\n`;
+        if (sale.customerName) ticket += `Cliente: ${sale.customerName}\n`;
+        ticket += separator + '\n';
+
+        ticket += 'Producto                    Cant   Total\n';
+        ticket += separator + '\n';
+
+        sale.items.forEach(item => {
+            const name  = item.productName.length > 24
+                ? item.productName.substring(0, 24)
+                : item.productName.padEnd(24);
+            const qty   = item.quantity.toString().padStart(4);
+            const total = `$${(item.price * item.quantity).toFixed(2)}`.padStart(9);
+            ticket += `${name} ${qty} ${total}\n`;
+        });
+
+        ticket += separator + '\n';
+        ticket += `${'Subtotal:'.padEnd(35)} $${sale.subtotal.toFixed(2)}\n`;
+        if (sale.tax > 0) {
+            const label = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
+            ticket += `${label.padEnd(35)} $${sale.tax.toFixed(2)}\n`;
+        }
+        if (sale.discount > 0) {
+            ticket += `${'Descuento:'.padEnd(35)} -$${sale.discount.toFixed(2)}\n`;
+        }
+        ticket += line + '\n';
+        ticket += `${'TOTAL:'.padEnd(35)} $${sale.total.toFixed(2)}\n`;
+        ticket += `${'Pago:'.padEnd(35)} ${this.getPaymentMethodText(sale.paymentMethod)}\n`;
+        ticket += line + '\n\n';
+        ticket += this.centerText('Gracias por su compra', 48) + '\n';
+        ticket += '\n\n\n';
+
+        return ticket;
     }
-    ticket += separator + '\n';
-    
-    // Productos  
-    ticket += 'Producto                    Cant   Total\n';
-    ticket += separator + '\n';
-    
-    sale.items.forEach(item => {
-      const name = item.productName.length > 24 
-        ? item.productName.substring(0, 24)
-        : item.productName.padEnd(24);
-      const qty = item.quantity.toString().padStart(4);
-      const total = `$${(item.price * item.quantity).toFixed(2)}`.padStart(9);
-      ticket += `${name} ${qty} ${total}\n`;
-    });
-    
-    ticket += separator + '\n';
-    
-    // Totales
-    ticket += `${'Subtotal:'.padEnd(35)} $${sale.subtotal.toFixed(2)}\n`;
-    if (sale.tax > 0) {
-      const ivaLabel = `IVA (${sale.channel === 'pedidosya' ? '27' : '0'}%):`;
-      ticket += `${ivaLabel.padEnd(35)} $${sale.tax.toFixed(2)}\n`;
+
+    private static createPrintableFile(sale: Sale): void {
+        const textContent = this.generatePlainTextTicket(sale);
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const url  = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href     = url;
+        link.download = `ticket-${sale.saleCode}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-    if (sale.discount > 0) {
-      ticket += `${'Descuento:'.padEnd(35)} -$${sale.discount.toFixed(2)}\n`;
+
+    private static async printWithBrowserDialog(content: string): Promise<void> {
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        if (printWindow) {
+            printWindow.document.write(content);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.onload = function () { printWindow.print(); };
+        }
     }
-    ticket += line + '\n';
-    ticket += `${'TOTAL:'.padEnd(35)} $${sale.total.toFixed(2)}\n`;
-    ticket += `${'Pago:'.padEnd(35)} ${this.getPaymentMethodText(sale.paymentMethod)}\n`;
-    ticket += line + '\n\n';
-    
-    // Pie
-    ticket += this.centerText('¡Gracias por su compra!', 48) + '\n';
-    
-    // Saltos para corte manual
-    ticket += '\n\n\n';
-    
-    return ticket;
-  }
 
-  // Crear archivo descargable para impresión manual
-  private static createPrintableFile(sale: Sale): void {
-    const textContent = this.generatePlainTextTicket(sale);
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ticket-${sale.saleCode}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  // Imprimir usando la API Web
-  private static async printWithWebAPI(content: string): Promise<void> {
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = url;
-    
-    document.body.appendChild(iframe);
-    
-    iframe.onload = function() {
-      iframe.contentWindow?.print();
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(url);
-      }, 1000);
-    };
-  }
-
-  // Imprimir usando diálogo del navegador  
-  private static async printWithBrowserDialog(content: string): Promise<void> {
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (printWindow) {
-      printWindow.document.write(content);
-      printWindow.document.close();
-      printWindow.focus();
-      
-      // Esperar a que cargue y luego imprimir
-      printWindow.onload = function() {
-        printWindow.print();
-      };
+    private static getPaymentMethodText(method: string): string {
+        const methods: Record<string, string> = {
+            cash:     'Efectivo',
+            card:     'Tarjeta',
+            transfer: 'Transferencia',
+        };
+        return methods[method] ?? method;
     }
-  }
 
-  // Obtener texto del método de pago
-  private static getPaymentMethodText(method: string): string {
-    const methods = {
-      'cash': 'Efectivo',
-      'card': 'Tarjeta',
-      'transfer': 'Transferencia'
-    };
-    return methods[method as keyof typeof methods] || method;
-  }
-
-  // Obtener configuración de impresora
-  static getPrinterSettings() {
-    try {
-      const saved = localStorage.getItem(this.PRINTER_SETTINGS_KEY);
-      return saved ? { ...this.defaultSettings, ...JSON.parse(saved) } : this.defaultSettings;
-    } catch (error) {
-      console.error('Error loading printer settings:', error);
-      return this.defaultSettings;
+    static getPrinterSettings() {
+        try {
+            const saved = localStorage.getItem(this.PRINTER_SETTINGS_KEY);
+            return saved ? { ...this.defaultSettings, ...JSON.parse(saved) } : this.defaultSettings;
+        } catch {
+            return this.defaultSettings;
+        }
     }
-  }
 
-  // Guardar configuración de impresora
-  static savePrinterSettings(settings: any): void {
-    try {
-      const current = this.getPrinterSettings();
-      const updated = { ...current, ...settings };
-      localStorage.setItem(this.PRINTER_SETTINGS_KEY, JSON.stringify(updated));
-    } catch (error) {
-      console.error('Error saving printer settings:', error);
+    static savePrinterSettings(settings: any): void {
+        try {
+            const updated = { ...this.getPrinterSettings(), ...settings };
+            localStorage.setItem(this.PRINTER_SETTINGS_KEY, JSON.stringify(updated));
+        } catch (error) {
+            console.error('Error saving printer settings:', error);
+        }
     }
-  }
 
-  // Reimprimir último ticket
-  static async reprintLastSale(): Promise<boolean> {
-    try {
-      const lastSaleData = localStorage.getItem('pos-last-sale');
-      if (lastSaleData) {
-        const sale: Sale = JSON.parse(lastSaleData);
-        return await this.printSale(sale);
-      }
-      return false;
-    } catch (error) {
-      console.error('Error reprinting last sale:', error);
-      return false;
+    static async reprintLastSale(): Promise<boolean> {
+        try {
+            const lastSaleData = localStorage.getItem('pos-last-sale');
+            if (lastSaleData) {
+                const sale: Sale = JSON.parse(lastSaleData);
+                return await this.printSale(sale);
+            }
+            return false;
+        } catch (error) {
+            console.error('Error reprinting last sale:', error);
+            return false;
+        }
     }
-  }
 }
