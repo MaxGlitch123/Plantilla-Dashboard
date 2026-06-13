@@ -85,27 +85,11 @@ export const ProtectedRoute = ({
   const token = useAuthStore(state => state.token);
   const rolFromStore = useAuthStore(state => state.rol);
 
-  // Obtener y mapear el rol del usuario desde el token de Auth0
+  // Obtener y mapear el rol del usuario usando el helper central (revisa todas las roles)
   const userRole: string | null = useMemo(() => {
     if (!user) return null;
-    
-    // La clave precisa para los roles en nuestro caso es https://buensabor/roles
-    const rolesFromClaim = user['https://buensabor/roles'];
-
-    // Si tenemos roles en el claim principal, los usamos directamente
-    if (Array.isArray(rolesFromClaim) && rolesFromClaim.length > 0) {
-      const role = rolesFromClaim[0];
-      const mappedRole = typeof role === "string" ? mapRole(role) : null;
-      return mappedRole;
-    }
-    
-    // Fallback: buscar en otras propiedades del usuario
-    const key = Object.keys(user).find((k) => k.includes("roles") || k.includes("role"));
-    const raw = key && user[key];
-    const role = Array.isArray(raw) ? raw[0] : raw;
-    const mappedRole = typeof role === "string" ? mapRole(role) : null;
-
-    return mappedRole;
+    const helperRole = getRoleFromUser(user);
+    return helperRole || null;
   }, [user]);
 
   // Actualizar el rol si cambia (separado para evitar un loop de dependencias)
