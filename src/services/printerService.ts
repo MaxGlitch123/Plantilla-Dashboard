@@ -59,7 +59,7 @@ export class PrinterService {
 
     @media print {
       @page {
-        size: 80mm auto;
+        size: 72mm 200mm;
         margin: 4mm 2mm;
       }
       body {
@@ -70,6 +70,7 @@ export class PrinterService {
         background: white;
         color: #000;
         width: 72mm; /* margen interno de seguridad */
+        zoom: 1.5;
       }
       .no-print { display: none !important; }
     }
@@ -508,7 +509,7 @@ export class PrinterService {
     }
 
     private static async printWithBrowserDialog(content: string): Promise<void> {
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        const printWindow = window.open('', '_blank', 'width=800,height=900');
         if (printWindow) {
             printWindow.document.write(content);
             printWindow.document.close();
