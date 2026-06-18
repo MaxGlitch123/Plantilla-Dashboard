@@ -59,7 +59,7 @@ export class PrinterService {
 
     @media print {
       @page {
-        size: 72mm 200mm;
+        size: 76mm 200mm;
         margin: 4mm 2mm;
       }
       body {
@@ -78,7 +78,7 @@ export class PrinterService {
     body {
       font-family: 'Arial', sans-serif;
       font-size: ${fs}px;
-      max-width: 72mm;
+      max-width: 76mm;
       margin: 0 auto;
       padding: 4px;
       background: white;
@@ -326,11 +326,6 @@ export class PrinterService {
       <div class="footer-message">Gracias por su compra</div>
       <div class="footer-website">www.cityfast.com</div>
 
-      ${qrData ? `
-      <div class="qr-block">
-        <img src="${qrData}" alt="QR Pedido" />
-        <div class="qr-label">Escanee para ver su pedido</div>
-      </div>` : ''}
 
       <div class="footer-message">Esperamos verle pronto</div>
       <div class="footer-timestamp">${date.toLocaleString('es-AR')}</div>
