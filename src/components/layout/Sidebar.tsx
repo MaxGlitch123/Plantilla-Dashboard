@@ -77,12 +77,12 @@ const SIDEBAR_ITEMS = [
     // Only allow this specific user in addition to role-based access
     allowedUsers: ['sol_cajera@cityfast.com'],
   },
-  {
-    label: 'Promociones',
-    icon: <Tag size={20} />,
-    path: '/promotions',
-    allowedRoles: ['admin', 'manager'],
-  },
+  // {
+  //   label: 'Promociones',
+  //   icon: <Tag size={20} />,
+  //   path: '/promotions',
+  //   allowedRoles: ['admin', 'manager'],
+  // },
   {
     label: 'Unidades de Medida',
     icon: <Package size={20} />,
