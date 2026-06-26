@@ -59,8 +59,8 @@ export class PrinterService {
 
     @media print {
       @page {
-        size: 76mm 200mm;
-        margin: 4mm 2mm;
+        size: 72mm 200mm;
+        margin: 0mm 0mm;
       }
       body {
         margin: 0;
@@ -70,7 +70,7 @@ export class PrinterService {
         background: white;
         color: #000;
         width: 72mm; /* margen interno de seguridad */
-        zoom: 1.5;
+        zoom: 1;
       }
       .no-print { display: none !important; }
     }
@@ -78,7 +78,7 @@ export class PrinterService {
     body {
       font-family: 'Arial', sans-serif;
       font-size: ${fs}px;
-      max-width: 76mm;
+      max-width: 72mm;
       margin: 0 auto;
       padding: 4px;
       background: white;
@@ -156,7 +156,7 @@ export class PrinterService {
 
     .item-name { flex: 2; }
     .item-qty  { width: 30px; text-align: center; font-weight: bold; }
-    .item-price{ width: 60px; text-align: right;  font-weight: bold; }
+    .item-price{ width: 50px; text-align: right;  font-weight: bold; }
 
     /* TOTALES */
     .totals {
@@ -326,6 +326,11 @@ export class PrinterService {
       <div class="footer-message">Gracias por su compra</div>
       <div class="footer-website">www.cityfast.com</div>
 
+      ${qrData ? `
+      <div class="qr-block">
+        <img src="${qrData}" alt="QR Pedido" />
+        <div class="qr-label">Escanee para ver su pedido</div>
+      </div>` : ''}
 
       <div class="footer-message">Esperamos verle pronto</div>
       <div class="footer-timestamp">${date.toLocaleString('es-AR')}</div>

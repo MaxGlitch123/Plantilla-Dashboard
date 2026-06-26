@@ -382,12 +382,17 @@ const SuppliesPage: React.FC = () => {
 
   const handleDelete = async (supplyId: number) => {
     try {
-      await apiClient.delete(`/articuloInsumo/${supplyId}`);
+      console.log('🗑️ Intentando eliminar insumo ID:', supplyId);
+      const response = await apiClient.delete(`/articuloInsumo/${supplyId}`);
+      console.log('✅ Insumo eliminado exitosamente:', response.data);
       await loadSupplies();
       setShowDeleteConfirm(null);
-    } catch (error) {
-      console.error('Error eliminando insumo:', error);
-      alert('Hubo un error al eliminar el insumo.');
+    } catch (error: any) {
+      console.error('❌ ERROR eliminando insumo:', error);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error message:', error.message);
+      alert(`Error al eliminar el insumo: ${error.response?.status || 'Error desconocido'}\n${error.response?.data?.error || error.message || ''}`);
     }
   };
 
