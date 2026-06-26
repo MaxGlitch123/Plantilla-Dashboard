@@ -1,6 +1,4 @@
 import { Sale } from '../types/pos';
-// @ts-ignore
-import QRCode from 'qrcode';
 
 export class PrinterService {
     private static readonly PRINTER_SETTINGS_KEY = 'pos-printer-settings';
@@ -18,14 +16,7 @@ export class PrinterService {
 
     static async printSale(sale: Sale): Promise<boolean> {
         try {
-            let qrBase64 = '';
-            try {
-                qrBase64 = await QRCode.toDataURL(`https://www.cityfast.com/pedido/${sale.saleCode || 'cf'}`);
-            } catch (qrError) {
-                console.error('Error generando QR local:', qrError);
-            }
-
-            const ticket = this.generateTicketContent(sale, qrBase64);
+            const ticket = this.generateTicketContent(sale);
             await this.printWithBrowserDialog(ticket);
 
             console.log(`Ticket impreso para venta ${sale.saleCode}`);
@@ -38,7 +29,7 @@ export class PrinterService {
         }
     }
 
-    private static generateTicketContent(sale: Sale, qrData: string): string {
+    private static generateTicketContent(sale: Sale): string {
         const date = new Date(sale.saleDate);
         const settings = this.getPrinterSettings();
 
@@ -59,18 +50,18 @@ export class PrinterService {
 
     @media print {
       @page {
-        size: 72mm 200mm;
+        size: 60mm 200mm;
         margin: 0mm 0mm;
       }
       body {
-        margin: 0;
+        margin: 0px;
         font-family: 'Arial', sans-serif;
         font-size: ${fs}px;
         line-height: 1.4;
         background: white;
         color: #000;
         width: 72mm; /* margen interno de seguridad */
-        zoom: 3;
+        zoom: 1.5;
       }
       .no-print { display: none !important; }
     }
@@ -307,13 +298,6 @@ export class PrinterService {
     <div class="footer">
       <div class="footer-message">Gracias por su compra</div>
       <div class="footer-website">www.cityfast.com</div>
-
-      ${qrData ? `
-      <div class="qr-block">
-        <img src="${qrData}" alt="QR Pedido" />
-        <div class="qr-label">Escanee para ver su pedido</div>
-      </div>` : ''}
-
       <div class="footer-message">Esperamos verle pronto</div>
       <div class="footer-timestamp">${date.toLocaleString('es-AR')}</div>
     </div>
