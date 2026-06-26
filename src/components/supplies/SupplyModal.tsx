@@ -209,8 +209,29 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
     try {
       if (supply?.id) {
         // 📝 Actualizar insumo existente
-        await apiClient.put(`/articuloInsumo/modificar/${supply.id}`, payload);
-        console.log('Insumo actualizado:', supply.id);
+        
+        // Verificar si SOLO se cambió el stock (para evitar recalcular precios innecesariamente)
+        const onlyStockChanged = 
+          formData.denominacion === supply.denominacion &&
+          Number(formData.precioCompra) === Number(supply.precioCompra) &&
+          Number(formData.precioVenta) === Number(supply.precioVenta) &&
+          Number(formData.stockMinimo) === Number(supply.stockMinimo) &&
+          Number(formData.stockMaximo) === Number(supply.stockMaximo) &&
+          formData.esParaElaborar === supply.esParaElaborar &&
+          Number(formData.stockActual) !== Number(supply.stockActual);
+        
+        if (onlyStockChanged) {
+          // Solo actualizar stock sin tocar precios (evita recálculo automático)
+          console.log('🔄 Actualizando solo stock (sin recalcular precios)...');
+          await apiClient.put(`/articuloInsumo/${supply.id}/stock`, {
+            stockActual: formData.stockActual
+          });
+          console.log('✅ Stock actualizado sin afectar precios de productos');
+        } else {
+          // Actualizar todo el insumo
+          await apiClient.put(`/articuloInsumo/modificar/${supply.id}`, payload);
+          console.log('Insumo actualizado:', supply.id);
+        }
 
         if (!formData.esParaElaborar && imageFile) {
           await uploadProductImage(Number(supply.id), imageFile, 'insumo');

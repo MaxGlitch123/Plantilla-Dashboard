@@ -414,31 +414,31 @@ const POSSalesPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Código
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha/Hora
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Cajero
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Canal
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Items
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Método
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -446,70 +446,66 @@ const POSSalesPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredSales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {sale.saleCode}
                         </div>
                         {sale.customerName && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {sale.customerName}
                           </div>
                         )}
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {formatDate(sale.saleDate)}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs text-gray-500">
                         {formatTime(sale.saleDate)}
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                       {sale.employeeName}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-3 whitespace-nowrap">
                       <Badge variant={sale.channel === 'pedidosya' ? 'danger' : 'success'} size="sm">
                         {sale.channel === 'pedidosya' ? 'Pedidos Ya' : 'Local'}
                       </Badge>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {sale.itemsCount} productos
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {sale.items.slice(0, 2).map(item => item.productName).join(', ')}
-                        {sale.items.length > 2 && '...'}
+                    <td className="px-2 py-3 whitespace-nowrap text-center">
+                      <div className="text-sm font-medium text-gray-900">
+                        {sale.itemsCount}
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 py-3 whitespace-nowrap">
                       <Badge variant="secondary" size="sm">{getPaymentMethodText(sale.paymentMethod)}</Badge>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className={`text-lg font-bold ${sale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
+                    <td className="px-3 py-3 whitespace-nowrap text-right">
+                      <div className={`text-base font-bold ${sale.status === 'VOIDED' ? 'text-gray-400 line-through' : 'text-green-600'}`}>
                         ${sale.total.toFixed(2)}
                       </div>
                       {!sale.synced && (
                         <div className="text-xs text-yellow-600">
-                          Pendiente sync
+                          Pendiente
                         </div>
                       )}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-2 py-3 whitespace-nowrap text-center">
                       <Badge variant={sale.status === 'VOIDED' ? 'danger' : 'success'} size="sm">
                         {sale.status === 'VOIDED' ? 'Anulada' : 'Activa'}
                       </Badge>
                     </td>
                     
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-2 py-3 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => setSelectedSale(sale)} title="Ver detalles">
                           <Eye className="h-4 w-4 text-blue-600" />
