@@ -70,7 +70,7 @@ export class PrinterService {
         background: white;
         color: #000;
         width: 72mm; /* margen interno de seguridad */
-        zoom: 1;
+        zoom: 3;
       }
       .no-print { display: none !important; }
     }
@@ -156,7 +156,7 @@ export class PrinterService {
 
     .item-name { flex: 2; }
     .item-qty  { width: 30px; text-align: center; font-weight: bold; }
-    .item-price{ width: 50px; text-align: right;  font-weight: bold; }
+    .item-price{ width: 60px; text-align: right;  font-weight: bold; }
 
     /* TOTALES */
     .totals {
@@ -223,24 +223,6 @@ export class PrinterService {
       color: #555;
     }
 
-    .qr-block {
-      text-align: center;
-      margin: 10px 0;
-    }
-
-    .qr-block img {
-      width: 120px;
-      height: 120px;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .qr-label {
-      font-size: ${fs - 3}px;
-      font-weight: bold;
-      margin-top: 4px;
-      letter-spacing: 0.3px;
-    }
   </style>
 </head>
 <body>
