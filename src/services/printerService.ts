@@ -5,10 +5,10 @@ export class PrinterService {
 
     private static defaultSettings = {
         printerName: 'Kretz LEX 850',
-        paperWidth: 80,
-        fontSize: 14, // Reducido para que entre bien en 80mm
-        lineSpacing: 1.4,
-        margins: { top: 2, bottom: 3, left: 2, right: 2 },
+        paperWidth: 58,
+        fontSize: 11, // Ajustado para papel de 58mm
+        lineSpacing: 1.3,
+        margins: { top: 2, bottom: 3, left: 1, right: 1 },
         enableLogo: false,
         autocut: false,
         matrixPrinter: false,
@@ -50,18 +50,18 @@ export class PrinterService {
 
     @media print {
       @page {
-        size: 60mm 200mm;
+        size: 58mm 200mm;
         margin: 0mm 0mm;
       }
       body {
         margin: 0px;
         font-family: 'Arial', sans-serif;
         font-size: ${fs}px;
-        line-height: 1.4;
+        line-height: 1.3;
         background: white;
         color: #000;
-        width: 72mm; /* margen interno de seguridad */
-        zoom: 1.5;
+        width: 56mm; /* margen interno de seguridad */
+        zoom: 1.0;
       }
       .no-print { display: none !important; }
     }
@@ -69,9 +69,9 @@ export class PrinterService {
     body {
       font-family: 'Arial', sans-serif;
       font-size: ${fs}px;
-      max-width: 72mm;
+      max-width: 56mm;
       margin: 0 auto;
-      padding: 4px;
+      padding: 2px;
       background: white;
       color: #000;
     }
@@ -90,9 +90,9 @@ export class PrinterService {
     }
 
     .business-name {
-      font-size: ${fs + 4}px;
+      font-size: ${fs + 2}px;
       font-weight: bold;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       margin-bottom: 2px;
     }
 
@@ -145,9 +145,9 @@ export class PrinterService {
       border-bottom: 1px solid #000;
     }
 
-    .item-name { flex: 2; }
-    .item-qty  { width: 30px; text-align: center; font-weight: bold; }
-    .item-price{ width: 60px; text-align: right;  font-weight: bold; }
+    .item-name { flex: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-qty  { width: 25px; text-align: center; font-weight: bold; font-size: ${fs - 2}px; }
+    .item-price{ width: 50px; text-align: right; font-weight: bold; font-size: ${fs - 2}px; }
 
     /* TOTALES */
     .totals {
@@ -166,10 +166,10 @@ export class PrinterService {
     .total-final {
       border-top: 2px solid #000;
       border-bottom: 2px solid #000;
-      padding: 5px 0;
-      font-size: ${fs + 2}px;
+      padding: 4px 0;
+      font-size: ${fs + 1}px;
       font-weight: bold;
-      margin-top: 5px;
+      margin-top: 4px;
       text-align: center;
     }
 
