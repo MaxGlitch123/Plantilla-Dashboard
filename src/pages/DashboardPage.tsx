@@ -93,24 +93,26 @@ const DashboardPage = () => {
           setMasVendidos(topVendidos);
         }
         
-        // Cargar estadísticas del POS (solo ventas del empleado actual)
+        // Cargar estadísticas del POS (mismo filtro que Mis Ventas)
         console.log('🛒 Obteniendo estadísticas del POS...');
         try {
-          const currentEmployee = await POSService.getEmployeeInfo();
+          const employeeInfo = await POSService.getEmployeeInfo();
+          const currentEmployeeId = String(employeeInfo.id);
           const sales = await POSService.getTodaySales();
           
-          // Filtrar solo las ventas del empleado actual
-          const mySales = sales.filter(s => 
-            s.status !== 'VOIDED' &&
-            s.employeeId === currentEmployee.id.toString()
-          );
+          // Filtrar igual que MisSalesPage
+          const mySales = sales.filter(s => {
+            if (s.status === 'VOIDED') return false;
+            if (currentEmployeeId && s.employeeId) return s.employeeId === currentEmployeeId;
+            return false;
+          });
           
           setTodaySales(mySales.length);
           setTodayRevenue(mySales.reduce((sum, sale) => sum + sale.total, 0));
-          console.log(`✅ Estadísticas POS del empleado ${currentEmployee.name} (ID: ${currentEmployee.id}):`, { 
+          console.log(`✅ Estadísticas POS del empleado (ID: ${currentEmployeeId}):`, { 
             ventas: mySales.length, 
             ingresos: mySales.reduce((sum, sale) => sum + sale.total, 0),
-            totalVentasDia: sales.length 
+            totalVentasSinFiltrar: sales.length 
           });
         } catch (error) {
           console.error('⚠️ Error cargando estadísticas POS:', error);
