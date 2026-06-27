@@ -93,26 +93,35 @@ const DashboardPage = () => {
           setMasVendidos(topVendidos);
         }
         
-        // Cargar estadísticas del POS (mismo filtro que Mis Ventas)
+        // Cargar estadísticas del POS (EXACTO como MisSalesPage)
         console.log('🛒 Obteniendo estadísticas del POS...');
         try {
           const employeeInfo = await POSService.getEmployeeInfo();
           const currentEmployeeId = String(employeeInfo.id);
-          const sales = await POSService.getTodaySales();
+          const currentEmployeeName = employeeInfo.nombre || employeeInfo.name;
+          const salesData = await POSService.getTodaySales();
           
-          // Filtrar igual que MisSalesPage
-          const mySales = sales.filter(s => {
-            if (s.status === 'VOIDED') return false;
+          console.log('[Dashboard] total salesData:', salesData.length, '| filtering by id:', currentEmployeeId, 'name:', currentEmployeeName);
+          if (salesData.length > 0) {
+            console.log('[Dashboard] sample sale:', { employeeId: salesData[0].employeeId, employeeName: salesData[0].employeeName, status: salesData[0].status });
+          }
+          
+          // Filtrar EXACTAMENTE igual que MisSalesPage (con fallback de nombre)
+          const mySales = salesData.filter(s => {
             if (currentEmployeeId && s.employeeId) return s.employeeId === currentEmployeeId;
+            if (currentEmployeeName && currentEmployeeName !== 'Empleado') return s.employeeName === currentEmployeeName;
             return false;
           });
           
-          setTodaySales(mySales.length);
-          setTodayRevenue(mySales.reduce((sum, sale) => sum + sale.total, 0));
-          console.log(`✅ Estadísticas POS del empleado (ID: ${currentEmployeeId}):`, { 
-            ventas: mySales.length, 
-            ingresos: mySales.reduce((sum, sale) => sum + sale.total, 0),
-            totalVentasSinFiltrar: sales.length 
+          // Excluir VOIDED solo al calcular los totales
+          const activeSales = mySales.filter(s => s.status !== 'VOIDED');
+          
+          setTodaySales(activeSales.length);
+          setTodayRevenue(activeSales.reduce((sum, sale) => sum + sale.total, 0));
+          console.log(`✅ Dashboard POS (ID: ${currentEmployeeId}):`, { 
+            ventasActivas: activeSales.length,
+            ventasTotales: mySales.length,
+            ingresos: activeSales.reduce((sum, sale) => sum + sale.total, 0)
           });
         } catch (error) {
           console.error('⚠️ Error cargando estadísticas POS:', error);
