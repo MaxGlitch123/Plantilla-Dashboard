@@ -1082,14 +1082,9 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
                     value={recipeUnits[index] || getUnidadLabel((detalle.item as Supply).unidadMedida)}
                     onChange={(e) => {
                       const newUnit = e.target.value;
-                      const baseUnit = getUnidadLabel((detalle.item as Supply).unidadMedida);
-                      const currentUnit = recipeUnits[index] || baseUnit;
-                      const baseValue = toBaseUnit(detalle.cantidad, currentUnit, baseUnit);
-                      const newDisplayValue = fromBaseUnit(baseValue, newUnit, baseUnit);
                       const newUnits = [...recipeUnits];
                       newUnits[index] = newUnit;
                       setRecipeUnits(newUnits);
-                      updateIngredient(index, 'cantidad', newDisplayValue);
                     }}
                   >
                     {getUnitOptions(getUnidadLabel((detalle.item as Supply).unidadMedida)).map(opt => (
