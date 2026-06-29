@@ -23,6 +23,33 @@ interface ProductModalProps {
 const getUnidadLabel = (unidad: string | { id: number; denominacion: string }) =>
   typeof unidad === 'string' ? unidad : unidad.denominacion;
 
+// Conversiones de unidades disponibles por unidad base
+const UNIT_CONVERSIONS: Record<string, { subUnit: string; factor: number }> = {
+  'kilogramos': { subUnit: 'Gramos', factor: 1000 },
+  'litros':     { subUnit: 'Mililitros', factor: 1000 },
+};
+
+const getUnitOptions = (baseUnit: string): string[] => {
+  const conversion = UNIT_CONVERSIONS[baseUnit.toLowerCase()];
+  return conversion ? [baseUnit, conversion.subUnit] : [baseUnit];
+};
+
+const toBaseUnit = (value: number, selectedUnit: string, baseUnit: string): number => {
+  const conversion = UNIT_CONVERSIONS[baseUnit.toLowerCase()];
+  if (conversion && selectedUnit.toLowerCase() === conversion.subUnit.toLowerCase()) {
+    return value / conversion.factor;
+  }
+  return value;
+};
+
+const fromBaseUnit = (value: number, selectedUnit: string, baseUnit: string): number => {
+  const conversion = UNIT_CONVERSIONS[baseUnit.toLowerCase()];
+  if (conversion && selectedUnit.toLowerCase() === conversion.subUnit.toLowerCase()) {
+    return value * conversion.factor;
+  }
+  return value;
+};
+
 const ProductModal: React.FC<ProductModalProps> = ({
   isOpen,
   onClose,
@@ -43,6 +70,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [supplies, setSupplies] = useState<Supply[]>([]);
   const [supplySearch, setSupplySearch] = useState<string[]>([]);
   const [supplyDropdownOpen, setSupplyDropdownOpen] = useState<boolean[]>([]);
+  const [recipeUnits, setRecipeUnits] = useState<string[]>([]);
 
   // Estado para manejar la imagen
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -98,6 +126,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
         });
         setSupplySearch(labels);
         setSupplyDropdownOpen(labels.map(() => false));
+        setRecipeUnits((initialData.detalles || []).map(d => {
+          const s = d.item as Supply;
+          const baseUnit = getUnidadLabel(s?.unidadMedida || 'Unidades');
+          return baseUnit;
+        }));
       } else {
         setFormData({
           denominacion: '',
@@ -112,6 +145,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         });
         setSupplySearch([]);
         setSupplyDropdownOpen([]);
+        setRecipeUnits([]);
       }
       setImageFile(null);
     };
@@ -347,7 +381,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
       // Solo asegurar que la categoría esté correctamente asignada
       console.log('🔄 Datos finales con categoría:', JSON.stringify(formData.categoria, null, 2));
       
-      const result = await onSave(formData, imageFile ?? undefined);
+      const convertedFormData = {
+        ...formData,
+        detalles: (formData.detalles || []).map((detalle, index) => {
+          const supply = detalle.item as Supply;
+          const baseUnit = getUnidadLabel(supply?.unidadMedida || 'Unidades');
+          const selectedUnit = recipeUnits[index] || baseUnit;
+          return {
+            ...detalle,
+            cantidad: toBaseUnit(detalle.cantidad, selectedUnit, baseUnit),
+          };
+        }),
+      };
+      const result = await onSave(convertedFormData, imageFile ?? undefined);
       console.log('✅ Producto guardado exitosamente:', result);
       
       // Verificar exhaustivamente que la respuesta contenga la categoría
@@ -593,6 +639,11 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
     }));
     setSupplySearch((prev) => [...prev, '']);
     setSupplyDropdownOpen((prev) => [...prev, false]);
+    setRecipeUnits((prev) => {
+      const baseUnit = getUnidadLabel(defaultSupply.unidadMedida);
+      const conversion = UNIT_CONVERSIONS[baseUnit.toLowerCase()];
+      return [...prev, conversion ? conversion.subUnit : baseUnit];
+    });
   };
 
 
@@ -602,6 +653,7 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
     setFormData((prev) => ({ ...prev, detalles: newDetalles }));
     setSupplySearch((prev) => prev.filter((_, i) => i !== index));
     setSupplyDropdownOpen((prev) => prev.filter((_, i) => i !== index));
+    setRecipeUnits((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateIngredient = (index: number, field: string, value: any) => {
@@ -1018,15 +1070,32 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
                     className="w-28 p-2 border rounded-md"
                     value={detalle.cantidad}
                     min={0}
+                    step="0.001"
                     onChange={(e) => {
-                      const cantidad = e.target.value === "" ? 0 : parseInt(e.target.value);
+                      const cantidad = e.target.value === '' ? 0 : parseFloat(e.target.value);
                       updateIngredient(index, 'cantidad', cantidad);
                     }}
                     placeholder="Cantidad"
                   />
-                  <span className="text-xs text-gray-500">
-                    {getUnidadLabel((detalle.item as Supply).unidadMedida)}
-                  </span>
+                  <select
+                    className="text-sm border rounded-md p-1 text-gray-600 bg-white"
+                    value={recipeUnits[index] || getUnidadLabel((detalle.item as Supply).unidadMedida)}
+                    onChange={(e) => {
+                      const newUnit = e.target.value;
+                      const baseUnit = getUnidadLabel((detalle.item as Supply).unidadMedida);
+                      const currentUnit = recipeUnits[index] || baseUnit;
+                      const baseValue = toBaseUnit(detalle.cantidad, currentUnit, baseUnit);
+                      const newDisplayValue = fromBaseUnit(baseValue, newUnit, baseUnit);
+                      const newUnits = [...recipeUnits];
+                      newUnits[index] = newUnit;
+                      setRecipeUnits(newUnits);
+                      updateIngredient(index, 'cantidad', newDisplayValue);
+                    }}
+                  >
+                    {getUnitOptions(getUnidadLabel((detalle.item as Supply).unidadMedida)).map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
 
                   <Button
                     variant="ghost"
