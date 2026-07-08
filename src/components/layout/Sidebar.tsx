@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Button from '../ui/Button';
 import { usePOSStore } from '../../store/posStore';
+import { clearPOSData } from '../../services/posService';
 
 const SIDEBAR_ITEMS = [
   {
@@ -176,6 +177,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
 
   const handleLogout = () => {
     clearCart();
+    // Clear all POS data to prevent ghost sales
+    clearPOSData();
     logout({ logoutParams: { returnTo: `${window.location.origin}/login` } });
   };
 

@@ -27,8 +27,26 @@ export const useOfflineSync = () => {
     try {
       const pendingSalesList = await OfflineService.getPendingSales();
       
+      // 🔒 Get current employee to validate sales
+      let currentEmployeeId: number | null = null;
+      try {
+        const employeeInfo = await POSService.getEmployeeInfo();
+        currentEmployeeId = employeeInfo.id;
+      } catch (error) {
+        console.warn('⚠️ Could not get current employee, skipping employee validation');
+      }
+      
       for (const sale of pendingSalesList) {
         try {
+          // 🔒 Skip sales that don't belong to current employee
+          // Keep them in queue for the correct employee to sync later
+          if (currentEmployeeId && parseInt(sale.employeeId) !== currentEmployeeId) {
+            console.warn(`⚠️ Skipping sale ${sale.saleCode} - belongs to employee ${sale.employeeId}, current: ${currentEmployeeId}`);
+            console.warn(`   Sale will sync when employee ${sale.employeeId} logs in`);
+            // DO NOT remove from queue - let the correct employee sync it
+            continue;
+          }
+          
           await POSService.uploadSale(sale);
           await OfflineService.markSaleAsSynced(sale.id);
           console.log(`✅ Venta ${sale.saleCode} sincronizada`);

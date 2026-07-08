@@ -4,8 +4,24 @@ import apiClient from '../api/apiClient';
 // Nombre del usuario Auth0 (desde ID token, seteado por AppRoutes)
 let _auth0UserName: string | null = null;
 
+// Track current employee to prevent cross-contamination
+let _currentEmployeeId: number | null = null;
+
 export function setAuth0UserName(name: string | null) {
   _auth0UserName = name;
+}
+
+// Clear all POS data from localStorage (used on logout)
+// ⚠️ NOTE: We do NOT clear 'pos-pending-sales' because they contain money already collected
+// that needs to sync. The sync process will filter them by employee ID to prevent ghost sales.
+export function clearPOSData() {
+  console.log('🧹 Clearing POS data (keeping pending sales for sync)...');
+  localStorage.removeItem('pos-sales');
+  // ⚠️ DO NOT REMOVE 'pos-pending-sales' - money already collected, must sync!
+  localStorage.removeItem('pos-last-sale');
+  localStorage.removeItem('pos-sync-status');
+  _currentEmployeeId = null;
+  console.log('✅ POS data cleared (pending sales preserved)');
 }
 
 export class POSService {
@@ -462,8 +478,17 @@ export class POSService {
       if (response.data && response.data.id) {
         const nombre = response.data.nombre || '';
         const apellido = response.data.apellido || '';
+        const employeeId = parseInt(response.data.id);
+        
+        // 🔒 Detect employee change and clear old data
+        if (_currentEmployeeId !== null && _currentEmployeeId !== employeeId) {
+          console.warn(`⚠️ Employee changed from ${_currentEmployeeId} to ${employeeId} - Clearing old sales data`);
+          clearPOSData();
+        }
+        _currentEmployeeId = employeeId;
+        
         return {
-          id: parseInt(response.data.id),
+          id: employeeId,
           name: `${nombre} ${apellido}`.trim() || 'Empleado',
           nombre: nombre,
         };
@@ -486,6 +511,16 @@ export class POSService {
     try {
       console.log('� Procesando venta...');
       
+      // 🔒 Validate current employee matches sale employee
+      const currentEmployeeId = await this.getValidEmployeeId();
+      const saleEmployeeId = parseInt(sale.employeeId);
+      
+      if (currentEmployeeId !== saleEmployeeId) {
+        console.error(`❌ GHOST SALE PREVENTED: Current employee ${currentEmployeeId} != Sale employee ${saleEmployeeId}`);
+        console.error(`   Sale code: ${sale.saleCode}, Date: ${sale.saleDate}`);
+        throw new Error('Employee mismatch - Sale not uploaded to prevent ghost sales');
+      }
+      
       // ✅ MAPEO CORRECTO PARA SaleRequestDTO del backend
       const salePayload = {
         items: sale.items.map(item => ({
@@ -496,7 +531,7 @@ export class POSService {
         })),
         total: parseFloat(sale.total.toString()), // Asegurar formato numérico
         paymentMethod: this.mapPaymentMethod(sale.paymentMethod),
-        employeeId: await this.getValidEmployeeId(), // Obtener empleado válido
+        employeeId: currentEmployeeId, // Use validated employee ID
         notes: sale.notes || `Venta POS - ${sale.saleCode}`,
         localId: sale.saleCode,
         timestamp: Date.parse(sale.saleDate),
