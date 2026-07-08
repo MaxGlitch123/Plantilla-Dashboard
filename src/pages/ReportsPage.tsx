@@ -105,7 +105,8 @@ const ReportsPage: React.FC = () => {
           loadingDetalle={data.loadingDetalle}
         />
       )}
-      {activeTab === 'web' && (
+      
+      {/**activeTab === 'web' && (
         <WebTab
           allPedidos={data.allPedidos}
           dateRange={dateRange}
@@ -118,7 +119,7 @@ const ReportsPage: React.FC = () => {
           ventasPorArticulo={data.ventasPorArticulo}
           loadingDetalle={data.loadingDetalle}
         />
-      )}
+      )*/}
     </Layout>
   );
 };
