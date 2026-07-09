@@ -688,9 +688,14 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
         ? (value as any).unidadMedida.denominacion 
         : (value as any).unidadMedida}`);
     } else if (field === 'cantidad') {
-      // Asegurar que la cantidad sea un número positivo
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
-      newDetalles[index].cantidad = Math.max(0, numValue);
+      // Aceptar tanto coma (,) como punto (.) para decimales
+      let stringValue = typeof value === 'string' ? value : String(value);
+      // Reemplazar coma por punto para parseFloat
+      stringValue = stringValue.replace(',', '.');
+      const numValue = parseFloat(stringValue);
+      
+      // Permitir decimales: 0.5 para "medio lomo", 1.2 kg, etc
+      newDetalles[index].cantidad = Math.max(0, isNaN(numValue) ? 0 : numValue);
       console.log(`✅ Cantidad actualizada para ${(newDetalles[index].item as any).denominacion}: ${newDetalles[index].cantidad}`);
     }
     
@@ -1066,16 +1071,20 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
                   </div>
 
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     className="w-28 p-2 border rounded-md"
                     value={detalle.cantidad}
-                    min={0}
-                    step="0.001"
                     onChange={(e) => {
-                      const cantidad = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                      updateIngredient(index, 'cantidad', cantidad);
+                      const inputValue = e.target.value;
+                      // Permitir coma (,) y punto (.) para decimales
+                      const normalizedValue = inputValue.replace(',', '.');
+                      const cantidad = inputValue === '' ? 0 : parseFloat(normalizedValue);
+                      updateIngredient(index, 'cantidad', cantidad || inputValue);
                     }}
-                    placeholder="Cantidad"
+                    placeholder="0.5 o 1.2"
+                    pattern="[0-9.,]+"
+                    title="Usa punto o coma para decimales: 0.5, 1,2, etc"
                   />
                   <select
                     className="text-sm border rounded-md p-1 text-gray-600 bg-white"
