@@ -1076,14 +1076,34 @@ ${isUpdate ? 'El producto base ha sido guardado' : 'El nuevo producto ha sido cr
                     className="w-28 p-2 border rounded-md"
                     value={detalle.cantidad}
                     onChange={(e) => {
-                      const inputValue = e.target.value;
-                      // Permitir coma (,) y punto (.) para decimales
-                      const normalizedValue = inputValue.replace(',', '.');
-                      const cantidad = inputValue === '' ? 0 : parseFloat(normalizedValue);
-                      updateIngredient(index, 'cantidad', cantidad || inputValue);
+                      let inputValue = e.target.value.trim();
+                      // Si está vacío, es 0
+                      if (inputValue === '') {
+                        updateIngredient(index, 'cantidad', 0);
+                        return;
+                      }
+                      // Reemplazar coma con punto
+                      const normalized = inputValue.replace(',', '.');
+                      // Parsear
+                      const parsed = parseFloat(normalized);
+                      // Guardar solo si es un número válido
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        updateIngredient(index, 'cantidad', parsed);
+                      }
+                      // Si no es válido, no hacer nada (dejar que siga escribiendo)
+                    }}
+                    onBlur={(e) => {
+                      // Al perder foco, limpiar y asegurar que es número
+                      let value = e.target.value.trim();
+                      if (value === '') {
+                        updateIngredient(index, 'cantidad', 0);
+                      } else {
+                        const normalized = value.replace(',', '.');
+                        const parsed = parseFloat(normalized);
+                        updateIngredient(index, 'cantidad', isNaN(parsed) || parsed < 0 ? 0 : parsed);
+                      }
                     }}
                     placeholder="0.5 o 1.2"
-                    pattern="[0-9.,]+"
                     title="Usa punto o coma para decimales: 0.5, 1,2, etc"
                   />
                   <select

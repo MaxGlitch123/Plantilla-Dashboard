@@ -419,9 +419,10 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
                 label="Stock actual"
                 type="number"
                 value={formData.stockActual}
-                onChange={(e) =>
-                  setFormData({ ...formData, stockActual: parseInt(e.target.value) })
-                }
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value || '0');
+                  setFormData({ ...formData, stockActual: isNaN(parsed) ? 0 : parsed })
+                }}
                 required
               />
             </div>
@@ -431,9 +432,10 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
                 label="Stock mínimo"
                 type="number"
                 value={formData.stockMinimo}
-                onChange={(e) =>
-                  setFormData({ ...formData, stockMinimo: parseInt(e.target.value) })
-                }
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value || '0');
+                  setFormData({ ...formData, stockMinimo: isNaN(parsed) ? 0 : parsed })
+                }}
               />
             </div>
 
@@ -442,9 +444,10 @@ const SupplyModal: React.FC<SupplyModalProps> = ({
                 label="Stock máximo"
                 type="number"
                 value={formData.stockMaximo}
-                onChange={(e) =>
-                  setFormData({ ...formData, stockMaximo: parseInt(e.target.value) })
-                }
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value || '0');
+                  setFormData({ ...formData, stockMaximo: isNaN(parsed) ? 0 : parsed })
+                }}
               />
             </div>
           </div>
