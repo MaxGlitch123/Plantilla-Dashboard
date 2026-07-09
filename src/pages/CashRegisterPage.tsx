@@ -124,17 +124,31 @@ const CashRegisterPage: React.FC = () => {
     }
     try {
       setError('');
-      await apiClient.post(`/api/pos/shifts/${activeShift.id}/close`, {
+      console.log('Closing shift:', activeShift.id, 'with closing cash:', amount);
+      
+      const response = await apiClient.post(`/api/pos/shifts/${activeShift.id}/close`, {
         closingCash: amount,
         notes: closingNotes || undefined
       });
-      setShowCloseModal(false);
-      setClosingAmount('');
-      setClosingNotes('');
-      showToast('Caja cerrada correctamente');
-      await loadData();
+      
+      console.log('Close response:', response.data);
+      
+      // Verify the shift was actually closed before clearing
+      if (response.data && response.data.endTime) {
+        setShowCloseModal(false);
+        setClosingAmount('');
+        setClosingNotes('');
+        showToast('✅ Caja cerrada correctamente');
+        await loadData();
+      } else {
+        setError('❌ El servidor no confirmó el cierre. Intenta nuevamente.');
+        console.error('Close response missing endTime:', response.data);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al cerrar turno');
+      console.error('Close shift error:', err);
+      const errorMsg = err.response?.data?.error || err.message || 'Error al cerrar turno';
+      setError(`❌ ${errorMsg}`);
+      console.error('Full error:', err.response?.data);
     }
   };
 
@@ -344,6 +358,34 @@ const CashRegisterPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* ⚠️ Warning if shift is over 8 hours */}
+                  {(() => {
+                    const startTime = new Date(activeShift.startTime).getTime();
+                    const now = Date.now();
+                    const diff = now - startTime;
+                    const hours = Math.floor(diff / 3600000);
+                    if (hours >= 8) {
+                      return (
+                        <div className={`p-3 rounded-lg mb-4 flex items-center space-x-2 ${
+                          hours >= 12 ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
+                        }`}>
+                          <AlertCircle className={hours >= 12 ? 'h-5 w-5 text-red-600' : 'h-5 w-5 text-yellow-600'} />
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${hours >= 12 ? 'text-red-700' : 'text-yellow-700'}`}>
+                              ⏰ Este turno lleva {hours} horas abierto
+                            </p>
+                            <p className={`text-xs ${hours >= 12 ? 'text-red-600' : 'text-yellow-600'}`}>
+                              {hours >= 12 
+                                ? '🔴 URGENTE: Cierra el turno ahora. El sistema auto-cerrará a las 23:00.' 
+                                : '⚠️ Recordá cerrar antes de las 23:00.'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   <div className="bg-gray-50 rounded-lg p-3 text-sm">
                     <span className="text-gray-500">Monto inicial:</span>
                     <span className="ml-2 font-semibold">{formatCurrency(activeShift.openingCash)}</span>
@@ -489,7 +531,13 @@ const CashRegisterPage: React.FC = () => {
                         <p className="font-medium text-gray-900">{shift.employeeName}</p>
                         <p className="text-sm text-gray-500">
                           {formatDate(shift.startTime)} · {formatTime(shift.startTime)}
-                          {shift.endTime && ` - ${formatTime(shift.endTime)}`}
+                          {shift.endTime && (
+                            ` - ${
+                              formatDate(shift.startTime) === formatDate(shift.endTime)
+                                ? formatTime(shift.endTime)
+                                : `${formatDate(shift.endTime)} · ${formatTime(shift.endTime)}`
+                            }`
+                          )}
                         </p>
                       </div>
                       <div className="text-right">
