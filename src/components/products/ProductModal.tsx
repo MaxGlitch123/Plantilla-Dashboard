@@ -242,9 +242,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
             id: 999999, // ID temporal para simulación
             denominacion: formData.denominacion,
             receta: {
-              ingredientes: formData.detalles.map(detalle => ({
+              ingredientes: formData.detalles.map((detalle, idx) => ({
                 insumoId: (detalle.item as any).id,
-                cantidad: detalle.cantidad
+                cantidad: detalle.cantidad,
+                unidad: recipeUnits[idx] || getUnidadLabel((detalle.item as Supply).unidadMedida), // ✅ Incluir unidad seleccionada
+                baseUnit: getUnidadLabel((detalle.item as Supply).unidadMedida) // ✅ Unidad base del insumo
               }))
             }
           },

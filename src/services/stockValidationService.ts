@@ -294,6 +294,12 @@ export const validateStockForImmediateOrder = async (orderItems: any[]): Promise
         // Es un producto manufacturado
         console.log('🏭 Producto manufacturado detectado - analizando ingredientes');
         
+        // Definir conversiones de unidades
+        const UNIT_CONVERSIONS: Record<string, { subUnit: string; factor: number }> = {
+          'kilogramos': { subUnit: 'gramos', factor: 1000 },
+          'litros': { subUnit: 'mililitros', factor: 1000 }
+        };
+        
         for (const ingredient of orderItem.articulo.receta.ingredientes) {
           const supply = supplies.find(s => s.id === ingredient.insumoId);
           if (!supply) {
@@ -301,7 +307,18 @@ export const validateStockForImmediateOrder = async (orderItems: any[]): Promise
             continue;
           }
           
-          const requiredAmount = ingredient.cantidad * orderItem.cantidad;
+          // ✅ Convertir cantidad a unidad base si fue seleccionada otra unidad
+          let requiredAmountInBaseUnit = ingredient.cantidad;
+          if (ingredient.unidad && ingredient.baseUnit && ingredient.unidad !== ingredient.baseUnit) {
+            const baseUnitLower = ingredient.baseUnit.toLowerCase();
+            const conversion = UNIT_CONVERSIONS[baseUnitLower];
+            if (conversion && ingredient.unidad.toLowerCase() === conversion.subUnit.toLowerCase()) {
+              requiredAmountInBaseUnit = ingredient.cantidad / conversion.factor;
+              console.log(`   📏 Conversión: ${ingredient.cantidad} ${ingredient.unidad} = ${requiredAmountInBaseUnit} ${ingredient.baseUnit}`);
+            }
+          }
+          
+          const requiredAmount = requiredAmountInBaseUnit * orderItem.cantidad;
           const stockAfter = supply.stockActual - requiredAmount;
           
           console.log(`   📋 ${supply.denominacion}: ${supply.stockActual} -> ${stockAfter} (requiere ${requiredAmount})`);
