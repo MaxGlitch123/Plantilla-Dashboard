@@ -43,6 +43,7 @@ const CashRegisterPage: React.FC = () => {
   const [historyDateFilter, setHistoryDateFilter] = useState('');
   const [historyTimeFrom, setHistoryTimeFrom] = useState('');
   const [historyTimeTo, setHistoryTimeTo] = useState('');
+  const [selectedShifts, setSelectedShifts] = useState<Set<number>>(new Set());
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -171,6 +172,167 @@ const CashRegisterPage: React.FC = () => {
     const hours = Math.floor(diff / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
     return `${hours}h ${minutes}m`;
+  };
+
+  const toggleShiftSelection = (shiftId: number) => {
+    const newSelected = new Set(selectedShifts);
+    if (newSelected.has(shiftId)) {
+      newSelected.delete(shiftId);
+    } else {
+      newSelected.add(shiftId);
+    }
+    setSelectedShifts(newSelected);
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedShifts.size === filteredHistory.length) {
+      setSelectedShifts(new Set());
+    } else {
+      setSelectedShifts(new Set(filteredHistory.map(s => s.id)));
+    }
+  };
+
+  const handlePrintByPeriod = (period: 'all' | 'today' | 'week') => {
+    let shiftsToprint: Shift[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (period === 'all') {
+      shiftsToprint = shiftHistory;
+    } else if (period === 'today') {
+      shiftsToprint = shiftHistory.filter(s => {
+        const shiftDate = new Date(s.startTime);
+        shiftDate.setHours(0, 0, 0, 0);
+        return shiftDate.getTime() === today.getTime();
+      });
+    } else if (period === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      shiftsToprint = shiftHistory.filter(s => {
+        const shiftDate = new Date(s.startTime);
+        return shiftDate >= weekAgo;
+      });
+    }
+
+    if (shiftsToprint.length === 0) {
+      alert('No hay cierres de caja para imprimir en este período');
+      return;
+    }
+
+    const w = window.open('', '_blank', 'width=800,height=600');
+    if (!w) return;
+
+    const periodTitle = period === 'all' ? 'TODOS LOS CIERRES' : period === 'today' ? 'CIERRES DEL DÍA' : 'CIERRES DE LA SEMANA';
+    const totalSales = shiftsToprint.reduce((acc, s) => acc + s.totalSales, 0);
+    const totalCash = shiftsToprint.reduce((acc, s) => acc + s.cashSales, 0);
+    const totalCard = shiftsToprint.reduce((acc, s) => acc + s.cardSales, 0);
+    const totalTransfer = shiftsToprint.reduce((acc, s) => acc + s.transferSales, 0);
+
+    w.document.write(`
+      <html><head><title>${periodTitle}</title>
+      <style>
+        body{font-family:monospace;padding:20px;font-size:12px}
+        h2{text-align:center;margin:0 0 4px}
+        .line{border-top:1px dashed #000;margin:8px 0}
+        .row{display:flex;justify-content:space-between;margin:2px 0}
+        .bold{font-weight:bold}
+        .header{background:#f0f0f0;padding:4px;margin:4px 0}
+        .total{font-weight:bold;background:#e8f5e9;padding:4px}
+        table{width:100%;border-collapse:collapse;margin:8px 0}
+        td{padding:4px;border-bottom:1px solid #ddd}
+      </style></head><body>
+      <h2>${periodTitle}</h2>
+      <p style="text-align:center;margin:0 0 8px">${new Date().toLocaleString()}</p>
+      <div class="line"></div>
+      <table>
+        <tr class="bold header">
+          <td>Turno</td>
+          <td>Cajero</td>
+          <td>Hora</td>
+          <td style="text-align:right">Total</td>
+          <td style="text-align:right">Efectivo</td>
+        </tr>
+        ${shiftsToprint.map(s => `
+          <tr>
+            <td>#${s.id}</td>
+            <td>${s.employeeName}</td>
+            <td>${formatTime(s.endTime || s.startTime)}</td>
+            <td style="text-align:right">$${s.totalSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            <td style="text-align:right">$${s.cashSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        `).join('')}
+      </table>
+      <div class="line"></div>
+      <div class="total"><div class="row"><span>TOTAL VENDIDO:</span><span>$${totalSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div></div>
+      <div class="row"><span>Efectivo:</span><span>$${totalCash.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Tarjeta:</span><span>$${totalCard.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Transferencia:</span><span>$${totalTransfer.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Cantidad de cierres:</span><span>${shiftsToprint.length}</span></div>
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
+  };
+
+  const handlePrintSelectedShifts = () => {
+    if (selectedShifts.size === 0) {
+      alert('Selecciona al menos un cierre para imprimir');
+      return;
+    }
+
+    const shiftsToprint = shiftHistory.filter(s => selectedShifts.has(s.id));
+    const totalSales = shiftsToprint.reduce((acc, s) => acc + s.totalSales, 0);
+    const totalCash = shiftsToprint.reduce((acc, s) => acc + s.cashSales, 0);
+    const totalCard = shiftsToprint.reduce((acc, s) => acc + s.cardSales, 0);
+    const totalTransfer = shiftsToprint.reduce((acc, s) => acc + s.transferSales, 0);
+
+    const w = window.open('', '_blank', 'width=800,height=600');
+    if (!w) return;
+
+    w.document.write(`
+      <html><head><title>CIERRES SELECCIONADOS</title>
+      <style>
+        body{font-family:monospace;padding:20px;font-size:12px}
+        h2{text-align:center;margin:0 0 4px}
+        .line{border-top:1px dashed #000;margin:8px 0}
+        .row{display:flex;justify-content:space-between;margin:2px 0}
+        .bold{font-weight:bold}
+        .header{background:#f0f0f0;padding:4px;margin:4px 0}
+        .total{font-weight:bold;background:#e8f5e9;padding:4px}
+        table{width:100%;border-collapse:collapse;margin:8px 0}
+        td{padding:4px;border-bottom:1px solid #ddd}
+      </style></head><body>
+      <h2>CIERRES SELECCIONADOS</h2>
+      <p style="text-align:center;margin:0 0 8px">${new Date().toLocaleString()}</p>
+      <div class="line"></div>
+      <table>
+        <tr class="bold header">
+          <td>Turno</td>
+          <td>Cajero</td>
+          <td>Hora</td>
+          <td style="text-align:right">Total</td>
+          <td style="text-align:right">Efectivo</td>
+        </tr>
+        ${shiftsToprint.map(s => `
+          <tr>
+            <td>#${s.id}</td>
+            <td>${s.employeeName}</td>
+            <td>${formatTime(s.endTime || s.startTime)}</td>
+            <td style="text-align:right">$${s.totalSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            <td style="text-align:right">$${s.cashSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        `).join('')}
+      </table>
+      <div class="line"></div>
+      <div class="total"><div class="row"><span>TOTAL VENDIDO:</span><span>$${totalSales.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div></div>
+      <div class="row"><span>Efectivo:</span><span>$${totalCash.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Tarjeta:</span><span>$${totalCard.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Transferencia:</span><span>$${totalTransfer.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
+      <div class="row"><span>Cantidad de cierres:</span><span>${shiftsToprint.length}</span></div>
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
   };
 
   const filteredHistory = shiftHistory.filter((s) => {
@@ -463,7 +625,35 @@ const CashRegisterPage: React.FC = () => {
         {tab === 'history' && (
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div className="p-4 border-b">
-              <h2 className="font-semibold mb-3">Historial de Turnos</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold">Historial de Turnos</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePrintByPeriod('today')}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+                    title="Imprimir cierres de hoy"
+                  >
+                    <Printer size={16} />
+                    <span className="hidden sm:inline">Hoy</span>
+                  </button>
+                  <button
+                    onClick={() => handlePrintByPeriod('week')}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
+                    title="Imprimir cierres de la semana"
+                  >
+                    <Printer size={16} />
+                    <span className="hidden sm:inline">Semana</span>
+                  </button>
+                  <button
+                    onClick={() => handlePrintByPeriod('all')}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+                    title="Imprimir todos los cierres"
+                  >
+                    <Printer size={16} />
+                    <span className="hidden sm:inline">Todos</span>
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -520,13 +710,45 @@ const CashRegisterPage: React.FC = () => {
               </div>
             ) : (
               <div className="divide-y">
+                {/* Header con checkbox para seleccionar todos */}
+                <div className="p-4 bg-gray-50 border-b flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedShifts.size === filteredHistory.length && filteredHistory.length > 0}
+                    onChange={toggleAllSelection}
+                    className="w-4 h-4 rounded cursor-pointer"
+                    title="Seleccionar/deseleccionar todos"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedShifts.size > 0 ? `${selectedShifts.size} seleccionado${selectedShifts.size !== 1 ? 's' : ''}` : 'Seleccionar todos'}
+                  </span>
+                  {selectedShifts.size > 0 && (
+                    <button
+                      onClick={handlePrintSelectedShifts}
+                      className="ml-auto flex items-center gap-2 px-3 py-2 text-sm bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors border border-yellow-200 font-medium"
+                      title="Imprimir los seleccionados"
+                    >
+                      <Printer size={16} />
+                      <span>Imprimir ({selectedShifts.size})</span>
+                    </button>
+                  )}
+                </div>
                 {filteredHistory.map((shift) => (
                   <div
                     key={shift.id}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => setShowHistoryDetail(shift)}
+                    className={`p-4 hover:bg-gray-50 transition-colors flex items-center gap-3 ${selectedShifts.has(shift.id) ? 'bg-blue-50' : ''}`}
                   >
-                    <div className="flex items-center justify-between">
+                    <input
+                      type="checkbox"
+                      checked={selectedShifts.has(shift.id)}
+                      onChange={() => toggleShiftSelection(shift.id)}
+                      className="w-4 h-4 rounded cursor-pointer flex-shrink-0"
+                    />
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={() => setShowHistoryDetail(shift)}
+                    >
+                      <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-gray-900">{shift.employeeName}</p>
                         <p className="text-sm text-gray-500">
@@ -568,6 +790,7 @@ const CashRegisterPage: React.FC = () => {
                           )}
                         </div>
                       </div>
+                    </div>
                     </div>
                   </div>
                 ))}
