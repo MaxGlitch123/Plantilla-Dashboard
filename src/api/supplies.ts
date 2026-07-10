@@ -13,7 +13,9 @@ export const fetchSupplies = async (): Promise<Supply[]> => {
     if (response.data && Array.isArray(response.data)) {
       console.log(`✅ Se obtuvieron ${response.data.length} insumos totales`);
       
-      const insumos: Supply[] = response.data;
+      // Filtrar insumos que no están eliminados (deleted !== true)
+      const insumos: Supply[] = response.data.filter((insumo: any) => !insumo.deleted);
+      console.log(`✅ Mostrando ${insumos.length} insumos activos`);
       
       // Para debug: mostrar todos los insumos encontrados
       insumos.forEach(insumo => {

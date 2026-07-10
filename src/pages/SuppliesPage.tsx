@@ -245,7 +245,9 @@ const SuppliesPage: React.FC = () => {
       // Cargar los insumos directamente desde la API con la ruta correcta
       const res = await apiClient.get('/articuloInsumo/listar');
       if (Array.isArray(res.data)) {
-        setSupplies(res.data);
+        // Filtrar insumos que no están eliminados (deleted !== true)
+        const activeSupplies = res.data.filter((insumo: any) => !insumo.deleted);
+        setSupplies(activeSupplies);
         
         // También actualizamos el store para mantener sincronización
         await useSupplyStore.getState().fetchSupplies();
