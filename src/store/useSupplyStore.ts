@@ -61,7 +61,9 @@ export const useSupplyStore = create<SupplyState>((set, get) => ({
       
       // Verificar que la respuesta sea un array
       if (Array.isArray(response.data)) {
-        set({ supplies: response.data, loading: false });
+        // Filtrar insumos que no están eliminados (deleted !== true)
+        const activeSupplies = response.data.filter((insumo: any) => !insumo.deleted);
+        set({ supplies: activeSupplies, loading: false });
       } else {
         console.error('La respuesta de insumos no es un array:', response.data);
         set({ error: 'Formato de respuesta inesperado', loading: false });

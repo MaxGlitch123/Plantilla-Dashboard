@@ -36,8 +36,9 @@ export const validateStockForOrder = async (items: any[]): Promise<{
       }
     });
     
-    const supplies: Supply[] = response.data;
-    console.log(`✅ ${supplies.length} insumos cargados desde la API`);
+    // Filtrar insumos que no están eliminados (deleted !== true)
+    const supplies: Supply[] = response.data.filter((insumo: any) => !insumo.deleted);
+    console.log(`✅ ${supplies.length} insumos activos cargados desde la API (total en BD: ${response.data.length})`);
     
     // Log de insumos disponibles
     console.log('📊 Stock actual de insumos:');
