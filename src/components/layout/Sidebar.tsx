@@ -68,7 +68,7 @@ const SIDEBAR_ITEMS = [
     label: 'Productos',
     icon: <ShoppingBag size={20} />,
     path: '/products',
-    allowedRoles: ['admin', 'manager', 'chef'],
+    allowedRoles: ['admin', 'manager', 'chef', 'cajero_control_de_stock'],
   },
   {
     label: 'Insumos',
