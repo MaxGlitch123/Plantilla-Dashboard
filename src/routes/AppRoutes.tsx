@@ -330,7 +330,7 @@ const AppRoutes: React.FC = () => {
           path="/products" 
           element={
             <ProtectedRoute 
-              allowedRoles={['admin', 'chef']}
+              allowedRoles={['admin', 'chef','cajero_control_de_stock']}
               enableAdvancedGuard={true}
             >
               <ProductsPage />
@@ -342,7 +342,7 @@ const AppRoutes: React.FC = () => {
           path="/products/categories" 
           element={
             <ProtectedRoute 
-              allowedRoles={['admin']}
+              allowedRoles={['admin','cajero_control_de_stock']}
               enableAdvancedGuard={true}
             >
               <ProductCategoriesPage />
