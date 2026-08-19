@@ -1,28 +1,44 @@
 import apiClient from './apiClient';
 
 
-export const fetchTotalVentas = async (): Promise<number> => {
-  const response = await apiClient.get('/grafico/ventas/total');
+export const fetchTotalVentas = async (desde?: string, hasta?: string): Promise<number> => {
+  const params = new URLSearchParams();
+  if (desde) params.append('desde', desde);
+  if (hasta) params.append('hasta', hasta);
+  const query = params.toString();
+  const response = await apiClient.get(`/grafico/ventas/total${query ? '?' + query : ''}`);
   return Number(response.data); 
 };
 
-export const fetchTotalPedidos = async (): Promise<number> => {
-  const response = await apiClient.get('/grafico/pedidos/total');
+export const fetchTotalPedidos = async (desde?: string, hasta?: string): Promise<number> => {
+  const params = new URLSearchParams();
+  if (desde) params.append('desde', desde);
+  if (hasta) params.append('hasta', hasta);
+  const query = params.toString();
+  const response = await apiClient.get(`/grafico/pedidos/total${query ? '?' + query : ''}`);
   return Number(response.data);
 };
 
-export const fetchProductosMasVendidos = async (): Promise<
+export const fetchProductosMasVendidos = async (desde?: string, hasta?: string): Promise<
   { producto: string; cantidad: number }[]
 > => {
-  const response = await apiClient.get('/grafico/productos/mas-vendidos');
+  const params = new URLSearchParams();
+  if (desde) params.append('desde', desde);
+  if (hasta) params.append('hasta', hasta);
+  const query = params.toString();
+  const response = await apiClient.get(`/grafico/productos/mas-vendidos${query ? '?' + query : ''}`);
   return response.data.map((item: { producto: string; cantidad: unknown }) => ({
     producto: item.producto,
     cantidad: Number(item.cantidad),
   }));
 };
 
-export const fetchTotalProductosVendidos = async (): Promise<number> => {
-  const response = await apiClient.get('/grafico/productos/total-vendidos');
+export const fetchTotalProductosVendidos = async (desde?: string, hasta?: string): Promise<number> => {
+  const params = new URLSearchParams();
+  if (desde) params.append('desde', desde);
+  if (hasta) params.append('hasta', hasta);
+  const query = params.toString();
+  const response = await apiClient.get(`/grafico/productos/total-vendidos${query ? '?' + query : ''}`);
   return Number(response.data);
 };
 

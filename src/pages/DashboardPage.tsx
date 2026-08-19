@@ -62,6 +62,14 @@ const DashboardPage = () => {
     return critical;
   };
 
+  // Función para calcular rango de fechas (este mes)
+  const getDateRange = (): { desde?: string; hasta?: string } => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    return { desde: monthStart, hasta: today };
+  };
+
   useEffect(() => {
     console.log('🔄 DashboardPage useEffect iniciado');
     let cleanupWebSocket: (() => void) | null = null;
@@ -69,26 +77,27 @@ const DashboardPage = () => {
     const loadData = async () => {
       try {
         console.log('📊 Cargando datos del dashboard...');
+        const { desde, hasta } = getDateRange();
         
         // Solo cargar datos generales si es admin
         if (isAdmin) {
           console.log('💰 Obteniendo total de ventas...');
-          const totalVentas = await fetchTotalVentas();
+          const totalVentas = await fetchTotalVentas(desde, hasta);
           console.log('✅ Total ventas:', totalVentas);
           setVentas(Number(totalVentas));
 
           console.log('📋 Obteniendo total de pedidos...');
-          const totalPedidos = await fetchTotalPedidos();
+          const totalPedidos = await fetchTotalPedidos(desde, hasta);
           console.log('✅ Total pedidos:', totalPedidos);
           setPedidos(Number(totalPedidos));
 
           console.log('🛍️ Obteniendo productos vendidos...');
-          const totalVendidos = await fetchTotalProductosVendidos();
+          const totalVendidos = await fetchTotalProductosVendidos(desde, hasta);
           console.log('✅ Productos vendidos:', totalVendidos);
           setProductosVendidos(Number(totalVendidos));
 
           console.log('🏆 Obteniendo productos más vendidos...');
-          const topVendidos = await fetchProductosMasVendidos();
+          const topVendidos = await fetchProductosMasVendidos(desde, hasta);
           console.log('✅ Productos más vendidos:', topVendidos);
           setMasVendidos(topVendidos);
         }
